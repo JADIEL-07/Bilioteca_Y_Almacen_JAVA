@@ -24,6 +24,7 @@ public class ConexionBD {
             String claveDB = "12872Jadiel#";
             Class.forName(driverDB);
             conexion = DriverManager.getConnection(urlDB,usuarioDB,claveDB);
+            System.out.println("Conexion exitosa");
         } catch (ClassNotFoundException ex) {
             System.err.println("No encuentro el driver"+ex.getMessage());
         } catch (SQLException ex){
