@@ -24,42 +24,17 @@ public class ConexionBD {
             String claveDB = "12872Jadiel#";
             Class.forName(driverDB);
             conexion = DriverManager.getConnection(urlDB,usuarioDB,claveDB);
-            
         } catch (ClassNotFoundException ex) {
             System.err.println("No encuentro el driver"+ex.getMessage());
         } catch (SQLException ex){
             System.err.println("Error al conectarme"+ex.getMessage());
         }
     }
-    public static boolean validarConexion() {
-        if (conexion == null) {
-            return false;
-        }
-        try {
-            return !conexion.isClosed();
-        } catch (SQLException ex) {
-            System.err.println("Error al validar la conexión: " + ex.getMessage());
-            return false;
-        }
-    }
-
-    public static Connection getConnection() {
-        if (!validarConexion()) {
-            getInstance();
-        }
-        return conexion;
-    }
-
     public static void desconectar(){
-        if (conexion == null) {
-            return;
-        }
         try {
-            if (!conexion.isClosed()) {
-                conexion.close();
-            }
+            conexion.close();
         } catch (SQLException ex) {
-            System.err.println("Error al desconectarse: " + ex.getMessage());
+            System.out.println("Error al desconectarse"+ex.getMessage());
         }
     }
     
