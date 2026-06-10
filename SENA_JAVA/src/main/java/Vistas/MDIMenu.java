@@ -4,11 +4,9 @@
  */
 package Vistas;
 
-import ConexionBD.ConexionBD;
-
 /**
  *
- * @author JADIEL
+ * @author Stiven
  */
 public class MDIMenu extends javax.swing.JFrame {
 
@@ -16,7 +14,6 @@ public class MDIMenu extends javax.swing.JFrame {
      * Creates new form MDIMenu
      */
     public MDIMenu() {
-        ConexionBD.getInstance();
         initComponents();
     }
 
