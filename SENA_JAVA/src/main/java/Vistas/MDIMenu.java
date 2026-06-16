@@ -3,7 +3,7 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/MDIApplication.java to edit this template
  */
 package Vistas;
-
+import javax.swing.JOptionPane;
 /**
  *
  * @author Stiven
@@ -49,6 +49,7 @@ public class MDIMenu extends javax.swing.JFrame {
 
         openMenuItem.setMnemonic('o');
         openMenuItem.setText("Open");
+        openMenuItem.addActionListener(this::openMenuItemActionPerformed);
         fileMenu.add(openMenuItem);
 
         saveMenuItem.setMnemonic('s');
@@ -120,6 +121,12 @@ public class MDIMenu extends javax.swing.JFrame {
     private void exitMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exitMenuItemActionPerformed
         System.exit(0);
     }//GEN-LAST:event_exitMenuItemActionPerformed
+
+    private void openMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openMenuItemActionPerformed
+    VistaLogin vc = new VistaLogin();
+    escritorio.add(vc);
+    vc.setVisible(true);
+    }//GEN-LAST:event_openMenuItemActionPerformed
 
     /**
      * @param args the command line arguments
