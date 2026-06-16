@@ -9,12 +9,14 @@ import javax.swing.JOptionPane;
  * @author Stiven
  */
 public class MDIMenu extends javax.swing.JFrame {
-
+    VistaLogin fescritorio;
     /**
      * Creates new form MDIMenu
      */
     public MDIMenu() {
-        initComponents();
+    initComponents();
+    fescritorio = new VistaLogin();
+    desktopPane.add(this.fescritorio);
     }
 
     /**
@@ -29,7 +31,7 @@ public class MDIMenu extends javax.swing.JFrame {
         desktopPane = new javax.swing.JDesktopPane();
         menuBar = new javax.swing.JMenuBar();
         fileMenu = new javax.swing.JMenu();
-        openMenuItem = new javax.swing.JMenuItem();
+        escritorio = new javax.swing.JMenuItem();
         saveMenuItem = new javax.swing.JMenuItem();
         saveAsMenuItem = new javax.swing.JMenuItem();
         exitMenuItem = new javax.swing.JMenuItem();
@@ -47,10 +49,10 @@ public class MDIMenu extends javax.swing.JFrame {
         fileMenu.setMnemonic('f');
         fileMenu.setText("File");
 
-        openMenuItem.setMnemonic('o');
-        openMenuItem.setText("Open");
-        openMenuItem.addActionListener(this::openMenuItemActionPerformed);
-        fileMenu.add(openMenuItem);
+        escritorio.setMnemonic('o');
+        escritorio.setText("Open");
+        escritorio.addActionListener(this::escritorioActionPerformed);
+        fileMenu.add(escritorio);
 
         saveMenuItem.setMnemonic('s');
         saveMenuItem.setText("Save");
@@ -122,11 +124,17 @@ public class MDIMenu extends javax.swing.JFrame {
         System.exit(0);
     }//GEN-LAST:event_exitMenuItemActionPerformed
 
-    private void openMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openMenuItemActionPerformed
-    VistaLogin vc = new VistaLogin();
-    escritorio.add(vc);
-    vc.setVisible(true);
-    }//GEN-LAST:event_openMenuItemActionPerformed
+    private void escritorioActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_escritorioActionPerformed
+    // 1. Mostrar la ventana interna
+    fescritorio.setVisible(true);
+    
+    // 2. Forzar a que la ventana se ubique al frente y tome el foco
+    try {
+        fescritorio.setSelected(true);
+    } catch (java.beans.PropertyVetoException e) {
+        e.printStackTrace();
+    }
+    }//GEN-LAST:event_escritorioActionPerformed
 
     /**
      * @param args the command line arguments
@@ -171,11 +179,11 @@ public class MDIMenu extends javax.swing.JFrame {
     private javax.swing.JMenuItem deleteMenuItem;
     private javax.swing.JDesktopPane desktopPane;
     private javax.swing.JMenu editMenu;
+    private javax.swing.JMenuItem escritorio;
     private javax.swing.JMenuItem exitMenuItem;
     private javax.swing.JMenu fileMenu;
     private javax.swing.JMenu helpMenu;
     private javax.swing.JMenuBar menuBar;
-    private javax.swing.JMenuItem openMenuItem;
     private javax.swing.JMenuItem pasteMenuItem;
     private javax.swing.JMenuItem saveAsMenuItem;
     private javax.swing.JMenuItem saveMenuItem;
