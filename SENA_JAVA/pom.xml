@@ -14,7 +14,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>26</maven.compiler.release>
-        <exec.mainClass>Vistas.MDIMenu</exec.mainClass>
+        <exec.mainClass>vista.Login</exec.mainClass>
     </properties>
 
     <dependencies>
@@ -22,6 +22,11 @@
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <version>42.7.7</version>
+        </dependency>
+        <dependency>
+            <groupId>com.formdev</groupId>
+            <artifactId>flatlaf</artifactId>
+            <version>3.5.4</version>
         </dependency>
     </dependencies>
 
