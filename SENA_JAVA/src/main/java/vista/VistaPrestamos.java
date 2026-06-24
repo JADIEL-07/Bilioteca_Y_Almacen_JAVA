@@ -4,18 +4,33 @@ import vista.componentes.*;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.awt.event.ActionListener;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 public class VistaPrestamos extends JPanel {
 
     private JTable tabla;
     private DefaultTableModel modeloTabla;
+    private CampoTextoModerno txtBuscar;
+    private BotonPlano btnNuevoPrestamo;
+    
+    // Modal
+    private JDialog dialogo;
+    private CampoTextoModerno txtDocumentoUsuario;
+    private CampoTextoModerno txtCodigoItem;
+    private CampoTextoModerno txtFechaPrestamo;
+    private CampoTextoModerno txtFechaDevolucion;
+    private BotonPlano btnGuardar;
+    private BotonPlano btnCancelar;
 
     public VistaPrestamos() {
-        setBackground(SenaColores.FONDO_OSCURO);
+        setOpaque(false);
         setLayout(new BorderLayout(0, 0));
         setBorder(BorderFactory.createEmptyBorder(25, 25, 25, 25));
         add(crearEncabezado(), BorderLayout.NORTH);
         add(crearCuerpo(), BorderLayout.CENTER);
+        crearDialogo();
     }
 
     private JPanel crearEncabezado() {
@@ -38,10 +53,14 @@ public class VistaPrestamos extends JPanel {
 
         JPanel acciones = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         acciones.setOpaque(false);
-        acciones.add(new CampoTextoModerno("Buscar préstamo...") {{ setPreferredSize(new Dimension(220, 38)); }});
-        BotonPlano btn = new BotonPlano("+ Nuevo Préstamo");
-        btn.addActionListener(e -> mostrarDialogo());
-        acciones.add(btn);
+        
+        txtBuscar = new CampoTextoModerno("Buscar préstamo...");
+        txtBuscar.setPreferredSize(new Dimension(220, 38));
+        
+        btnNuevoPrestamo = new BotonPlano("+ Nuevo Préstamo");
+        
+        acciones.add(txtBuscar);
+        acciones.add(btnNuevoPrestamo);
 
         header.add(tp, BorderLayout.WEST);
         header.add(acciones, BorderLayout.EAST);
@@ -49,48 +68,87 @@ public class VistaPrestamos extends JPanel {
     }
 
     private JPanel crearCuerpo() {
-        PanelRedondeado body = new PanelRedondeado(SenaColores.SUPERFICIE, 18);
+        PanelRedondeado body = new PanelRedondeado(new Color(15, 23, 42, 200), 18);
         body.setLayout(new BorderLayout());
         body.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
-        String[] cols = {"ID", "Usuario", "Elemento", "Fecha Préstamo", "Fecha Devolución", "Estado"};
-        modeloTabla = new DefaultTableModel(cols, 0) { public boolean isCellEditable(int r, int c) { return false; } };
+        String[] cols = {"ID", "Doc. Usuario", "Cód. Elemento", "Fecha Préstamo", "Fecha Devolución", "Estado"};
+        modeloTabla = new DefaultTableModel(cols, 0) { 
+            public boolean isCellEditable(int r, int c) { return false; } 
+        };
         tabla = new JTable(modeloTabla);
-
-        modeloTabla.addRow(new Object[]{"1", "Carlos Pérez", "Laptop HP ProBook", "2026-06-10", "2026-06-17", "Activo"});
-        modeloTabla.addRow(new Object[]{"2", "María López", "Proyector Epson", "2026-06-12", "2026-06-14", "Devuelto"});
-        modeloTabla.addRow(new Object[]{"3", "Juan Rodríguez", "Multímetro Fluke", "2026-06-15", "2026-06-22", "Activo"});
-        modeloTabla.addRow(new Object[]{"4", "Laura Gómez", "Java Cómo Programar", "2026-06-01", "2026-06-08", "Vencido"});
 
         body.add(TablaModerna.crear(tabla), BorderLayout.CENTER);
         return body;
     }
 
-    private void mostrarDialogo() {
-        JDialog d = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Nuevo Préstamo", true);
-        d.setSize(480, 420);
-        d.setLocationRelativeTo(this);
-        d.getContentPane().setBackground(SenaColores.FONDO_OSCURO);
+    private void crearDialogo() {
+        dialogo = new JDialog((Frame) null, "Nuevo Préstamo", true);
+        dialogo.setSize(450, 500);
+        dialogo.setLocationRelativeTo(this);
+        dialogo.getContentPane().setBackground(SenaColores.FONDO_OSCURO);
+
         JPanel form = new JPanel(new GridLayout(0, 1, 0, 12));
         form.setOpaque(false);
         form.setBorder(BorderFactory.createEmptyBorder(25, 25, 25, 25));
+
         JLabel lbl = new JLabel("Registrar Préstamo");
         lbl.setForeground(SenaColores.TEXTO_PRINCIPAL);
         lbl.setFont(new Font("Segoe UI", Font.BOLD, 20));
         form.add(lbl);
-        form.add(new CampoTextoModerno("Usuario (Documento o Nombre)"));
-        form.add(new CampoTextoModerno("Elemento (Código o Nombre)"));
-        form.add(new CampoTextoModerno("Fecha de Devolución (YYYY-MM-DD)"));
+
+        txtDocumentoUsuario = new CampoTextoModerno("Documento del Usuario");
+        txtCodigoItem = new CampoTextoModerno("Código del Elemento");
+        txtFechaPrestamo = new CampoTextoModerno("Fecha Préstamo (YYYY-MM-DD)");
+        txtFechaDevolucion = new CampoTextoModerno("Fecha Devolución (YYYY-MM-DD)");
+        
+        form.add(txtDocumentoUsuario);
+        form.add(txtCodigoItem);
+        form.add(txtFechaPrestamo);
+        form.add(txtFechaDevolucion);
+
         JPanel botones = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         botones.setOpaque(false);
-        BotonPlano bc = new BotonPlano("Cancelar", new Color(100,116,139), new Color(71,85,105));
-        bc.addActionListener(e -> d.dispose());
-        BotonPlano bg = new BotonPlano("Registrar");
-        bg.addActionListener(e -> d.dispose());
-        botones.add(bc);
-        botones.add(bg);
+        btnCancelar = new BotonPlano("Cancelar", new Color(100, 116, 139), new Color(71, 85, 105));
+        btnGuardar = new BotonPlano("Guardar");
+        
+        btnCancelar.addActionListener(e -> dialogo.setVisible(false));
+        btnNuevoPrestamo.addActionListener(e -> {
+            limpiarFormulario();
+            
+            // Sugerir fechas de hoy y dentro de 3 días
+            LocalDate hoy = LocalDate.now();
+            txtFechaPrestamo.setText(hoy.format(DateTimeFormatter.ISO_LOCAL_DATE));
+            txtFechaDevolucion.setText(hoy.plusDays(3).format(DateTimeFormatter.ISO_LOCAL_DATE));
+            
+            dialogo.setLocationRelativeTo(this);
+            dialogo.setVisible(true);
+        });
+        
+        botones.add(btnCancelar);
+        botones.add(btnGuardar);
         form.add(botones);
-        d.add(form);
-        d.setVisible(true);
+
+        dialogo.add(form);
+    }
+    
+    public void limpiarFormulario() {
+        txtDocumentoUsuario.setText("");
+        txtCodigoItem.setText("");
+        txtFechaPrestamo.setText("");
+        txtFechaDevolucion.setText("");
+    }
+
+    public DefaultTableModel getModeloTabla() { return modeloTabla; }
+    public JDialog getDialogo() { return dialogo; }
+    
+    public CampoTextoModerno getTxtDocumentoUsuario() { return txtDocumentoUsuario; }
+    public CampoTextoModerno getTxtCodigoItem() { return txtCodigoItem; }
+    public CampoTextoModerno getTxtFechaPrestamo() { return txtFechaPrestamo; }
+    public CampoTextoModerno getTxtFechaDevolucion() { return txtFechaDevolucion; }
+
+    public void setControlador(ActionListener c) {
+        btnGuardar.setActionCommand("Guardar");
+        btnGuardar.addActionListener(c);
     }
 }

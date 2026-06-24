@@ -4,19 +4,32 @@ import vista.componentes.*;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.awt.event.ActionListener;
 
 public class VistaInventario extends JPanel {
 
     private JTable tabla;
     private DefaultTableModel modeloTabla;
     private CampoTextoModerno txtBuscar;
+    private BotonPlano btnNuevoElemento;
+    
+    // Elementos del Modal
+    private JDialog dialogo;
+    private CampoTextoModerno txtNombre;
+    private CampoTextoModerno txtCodigo;
+    private CampoTextoModerno txtCategoria;
+    private CampoTextoModerno txtCantidad;
+    private CampoTextoModerno txtUbicacion;
+    private BotonPlano btnGuardar;
+    private BotonPlano btnCancelar;
 
     public VistaInventario() {
-        setBackground(SenaColores.FONDO_OSCURO);
+        setOpaque(false);
         setLayout(new BorderLayout(0, 0));
         setBorder(BorderFactory.createEmptyBorder(25, 25, 25, 25));
         add(crearEncabezado(), BorderLayout.NORTH);
         add(crearCuerpo(), BorderLayout.CENTER);
+        crearDialogo();
     }
 
     private JPanel crearEncabezado() {
@@ -46,11 +59,10 @@ public class VistaInventario extends JPanel {
         txtBuscar = new CampoTextoModerno("Buscar elemento...");
         txtBuscar.setPreferredSize(new Dimension(220, 38));
 
-        BotonPlano btnAgregar = new BotonPlano("+ Nuevo Elemento");
-        btnAgregar.addActionListener(e -> mostrarDialogo());
+        btnNuevoElemento = new BotonPlano("+ Nuevo Elemento");
 
         acciones.add(txtBuscar);
-        acciones.add(btnAgregar);
+        acciones.add(btnNuevoElemento);
 
         header.add(tituloPanel, BorderLayout.WEST);
         header.add(acciones, BorderLayout.EAST);
@@ -58,31 +70,25 @@ public class VistaInventario extends JPanel {
     }
 
     private JPanel crearCuerpo() {
-        PanelRedondeado body = new PanelRedondeado(SenaColores.SUPERFICIE, 18);
+        PanelRedondeado body = new PanelRedondeado(new Color(15, 23, 42, 200), 18);
         body.setLayout(new BorderLayout());
         body.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
-        String[] columnas = {"ID", "Nombre", "Código", "Categoría", "Cantidad", "Estado"};
+        String[] columnas = {"ID", "Nombre", "Código", "Categoría", "Cantidad", "Ubicación", "Estado"};
         modeloTabla = new DefaultTableModel(columnas, 0) {
             public boolean isCellEditable(int r, int c) { return false; }
         };
         tabla = new JTable(modeloTabla);
-
-        modeloTabla.addRow(new Object[]{"1", "Laptop HP ProBook 450", "INV-2024-001", "Equipos", "15", "Disponible"});
-        modeloTabla.addRow(new Object[]{"2", "Proyector Epson S41+", "INV-2024-002", "Equipos", "8", "Disponible"});
-        modeloTabla.addRow(new Object[]{"3", "Libro: Java Cómo Programar", "BIB-2024-045", "Libros", "25", "Disponible"});
-        modeloTabla.addRow(new Object[]{"4", "Multímetro Fluke 117", "INV-2024-078", "Herramientas", "12", "En préstamo"});
-        modeloTabla.addRow(new Object[]{"5", "Cable HDMI 3m", "INV-2024-120", "Insumos", "50", "Disponible"});
-
+        
         body.add(TablaModerna.crear(tabla), BorderLayout.CENTER);
         return body;
     }
 
-    private void mostrarDialogo() {
-        JDialog d = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Nuevo Elemento", true);
-        d.setSize(480, 520);
-        d.setLocationRelativeTo(this);
-        d.getContentPane().setBackground(SenaColores.FONDO_OSCURO);
+    private void crearDialogo() {
+        dialogo = new JDialog((Frame) null, "Nuevo Elemento", true);
+        dialogo.setSize(480, 560);
+        dialogo.setLocationRelativeTo(this);
+        dialogo.getContentPane().setBackground(SenaColores.FONDO_OSCURO);
 
         JPanel form = new JPanel(new GridLayout(0, 1, 0, 12));
         form.setOpaque(false);
@@ -93,23 +99,58 @@ public class VistaInventario extends JPanel {
         lbl.setFont(new Font("Segoe UI", Font.BOLD, 20));
         form.add(lbl);
 
-        form.add(new CampoTextoModerno("Nombre del Elemento"));
-        form.add(new CampoTextoModerno("Código Interno"));
-        form.add(new CampoTextoModerno("Categoría (Equipos / Libros / Herramientas)"));
-        form.add(new CampoTextoModerno("Cantidad"));
-        form.add(new CampoTextoModerno("Ubicación"));
+        txtNombre = new CampoTextoModerno("Nombre del Elemento");
+        txtCodigo = new CampoTextoModerno("Código Interno");
+        txtCategoria = new CampoTextoModerno("Categoría (Equipos / Libros / Herramientas / Insumos)");
+        txtCantidad = new CampoTextoModerno("Cantidad");
+        txtUbicacion = new CampoTextoModerno("Ubicación");
+        
+        form.add(txtNombre);
+        form.add(txtCodigo);
+        form.add(txtCategoria);
+        form.add(txtCantidad);
+        form.add(txtUbicacion);
 
         JPanel botones = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         botones.setOpaque(false);
-        BotonPlano btnCancelar = new BotonPlano("Cancelar", new Color(100, 116, 139), new Color(71, 85, 105));
-        btnCancelar.addActionListener(e -> d.dispose());
-        BotonPlano btnGuardar = new BotonPlano("Guardar");
-        btnGuardar.addActionListener(e -> d.dispose());
+        btnCancelar = new BotonPlano("Cancelar", new Color(100, 116, 139), new Color(71, 85, 105));
+        btnGuardar = new BotonPlano("Guardar");
+        
+        btnCancelar.addActionListener(e -> dialogo.setVisible(false));
+        btnNuevoElemento.addActionListener(e -> {
+            limpiarFormulario();
+            dialogo.setLocationRelativeTo(this);
+            dialogo.setVisible(true);
+        });
+        
         botones.add(btnCancelar);
         botones.add(btnGuardar);
         form.add(botones);
 
-        d.add(form);
-        d.setVisible(true);
+        dialogo.add(form);
+    }
+    
+    public void limpiarFormulario() {
+        txtNombre.setText("");
+        txtCodigo.setText("");
+        txtCategoria.setText("");
+        txtCantidad.setText("");
+        txtUbicacion.setText("");
+    }
+
+    public JTable getTabla() { return tabla; }
+    public DefaultTableModel getModeloTabla() { return modeloTabla; }
+    public CampoTextoModerno getTxtBuscar() { return txtBuscar; }
+    public JDialog getDialogo() { return dialogo; }
+    
+    public CampoTextoModerno getTxtNombre() { return txtNombre; }
+    public CampoTextoModerno getTxtCodigo() { return txtCodigo; }
+    public CampoTextoModerno getTxtCategoria() { return txtCategoria; }
+    public CampoTextoModerno getTxtCantidad() { return txtCantidad; }
+    public CampoTextoModerno getTxtUbicacion() { return txtUbicacion; }
+
+    public void setControlador(ActionListener c) {
+        btnGuardar.setActionCommand("Guardar");
+        btnGuardar.addActionListener(c);
     }
 }

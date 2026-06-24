@@ -4,19 +4,32 @@ import vista.componentes.*;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.awt.event.ActionListener;
 
 public class VistaUsuarios extends JPanel {
 
     private JTable tabla;
     private DefaultTableModel modeloTabla;
     private CampoTextoModerno txtBuscar;
+    private BotonPlano btnNuevoUsuario;
+    
+    // Modal
+    private JDialog dialogo;
+    private CampoTextoModerno txtNombre;
+    private CampoTextoModerno txtDocumento;
+    private JComboBox<String> cbTipo;
+    private CampoTextoModerno txtEmail;
+    private CampoTextoModerno txtCelular;
+    private BotonPlano btnGuardar;
+    private BotonPlano btnCancelar;
 
     public VistaUsuarios() {
-        setBackground(SenaColores.FONDO_OSCURO);
+        setOpaque(false);
         setLayout(new BorderLayout(0, 0));
         setBorder(BorderFactory.createEmptyBorder(25, 25, 25, 25));
         add(crearEncabezado(), BorderLayout.NORTH);
         add(crearCuerpo(), BorderLayout.CENTER);
+        crearDialogo();
     }
 
     private JPanel crearEncabezado() {
@@ -32,7 +45,7 @@ public class VistaUsuarios extends JPanel {
         titulo.setForeground(SenaColores.TEXTO_PRINCIPAL);
         titulo.setFont(new Font("Segoe UI", Font.BOLD, 24));
 
-        JLabel subtitulo = new JLabel("Administra los usuarios del sistema, roles y permisos");
+        JLabel subtitulo = new JLabel("Administra instructores, aprendices y personal administrativo");
         subtitulo.setForeground(SenaColores.TEXTO_SECUNDARIO);
         subtitulo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
 
@@ -46,11 +59,10 @@ public class VistaUsuarios extends JPanel {
         txtBuscar = new CampoTextoModerno("Buscar usuario...");
         txtBuscar.setPreferredSize(new Dimension(220, 38));
 
-        BotonPlano btnAgregar = new BotonPlano("+ Nuevo Usuario");
-        btnAgregar.addActionListener(e -> mostrarDialogo());
+        btnNuevoUsuario = new BotonPlano("+ Nuevo Usuario");
 
         acciones.add(txtBuscar);
-        acciones.add(btnAgregar);
+        acciones.add(btnNuevoUsuario);
 
         header.add(tituloPanel, BorderLayout.WEST);
         header.add(acciones, BorderLayout.EAST);
@@ -58,57 +70,89 @@ public class VistaUsuarios extends JPanel {
     }
 
     private JPanel crearCuerpo() {
-        PanelRedondeado body = new PanelRedondeado(SenaColores.SUPERFICIE, 18);
+        PanelRedondeado body = new PanelRedondeado(new Color(15, 23, 42, 200), 18);
         body.setLayout(new BorderLayout());
         body.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
-        String[] columnas = {"ID", "Nombre Completo", "Documento", "Email", "Rol", "Estado"};
+        String[] columnas = {"ID", "Nombre", "Documento", "Tipo", "Email", "Celular", "Estado"};
         modeloTabla = new DefaultTableModel(columnas, 0) {
             public boolean isCellEditable(int r, int c) { return false; }
         };
         tabla = new JTable(modeloTabla);
-
-        modeloTabla.addRow(new Object[]{"1", "Carlos Andrés Pérez", "1098765432", "carlos@sena.edu.co", "Admin", "Activo"});
-        modeloTabla.addRow(new Object[]{"2", "María Fernanda López", "1087654321", "maria@sena.edu.co", "Bibliotecario", "Activo"});
-        modeloTabla.addRow(new Object[]{"3", "Juan David Rodríguez", "1076543210", "juan@sena.edu.co", "Aprendiz", "Activo"});
-        modeloTabla.addRow(new Object[]{"4", "Laura Valentina Gómez", "1065432109", "laura@sena.edu.co", "Almacenista", "Inactivo"});
-        modeloTabla.addRow(new Object[]{"5", "Andrés Felipe Martínez", "1054321098", "andres@sena.edu.co", "Aprendiz", "Activo"});
-
+        
         body.add(TablaModerna.crear(tabla), BorderLayout.CENTER);
         return body;
     }
 
-    private void mostrarDialogo() {
-        JDialog d = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Nuevo Usuario", true);
-        d.setSize(480, 480);
-        d.setLocationRelativeTo(this);
-        d.getContentPane().setBackground(SenaColores.FONDO_OSCURO);
+    private void crearDialogo() {
+        dialogo = new JDialog((Frame) null, "Nuevo Usuario", true);
+        dialogo.setSize(450, 500);
+        dialogo.setLocationRelativeTo(this);
+        dialogo.getContentPane().setBackground(SenaColores.FONDO_OSCURO);
 
         JPanel form = new JPanel(new GridLayout(0, 1, 0, 12));
         form.setOpaque(false);
         form.setBorder(BorderFactory.createEmptyBorder(25, 25, 25, 25));
 
-        JLabel lbl = new JLabel("Nuevo Usuario");
+        JLabel lbl = new JLabel("Registrar Nuevo Usuario");
         lbl.setForeground(SenaColores.TEXTO_PRINCIPAL);
         lbl.setFont(new Font("Segoe UI", Font.BOLD, 20));
         form.add(lbl);
 
-        form.add(new CampoTextoModerno("Nombre Completo"));
-        form.add(new CampoTextoModerno("Número de Documento"));
-        form.add(new CampoTextoModerno("Correo Electrónico"));
-        form.add(new CampoTextoModerno("Rol (Admin / Bibliotecario / Aprendiz)"));
+        txtNombre = new CampoTextoModerno("Nombre Completo");
+        txtDocumento = new CampoTextoModerno("Número de Documento");
+        
+        cbTipo = new JComboBox<>(new String[]{"Aprendiz", "Instructor", "Administrativo"});
+        cbTipo.setBackground(new Color(30, 41, 59));
+        cbTipo.setForeground(Color.WHITE);
+        
+        txtEmail = new CampoTextoModerno("Correo Electrónico");
+        txtCelular = new CampoTextoModerno("Teléfono/Celular");
+        
+        form.add(txtNombre);
+        form.add(txtDocumento);
+        form.add(cbTipo);
+        form.add(txtEmail);
+        form.add(txtCelular);
 
         JPanel botones = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         botones.setOpaque(false);
-        BotonPlano btnCancelar = new BotonPlano("Cancelar", new Color(100, 116, 139), new Color(71, 85, 105));
-        btnCancelar.addActionListener(e -> d.dispose());
-        BotonPlano btnGuardar = new BotonPlano("Guardar");
-        btnGuardar.addActionListener(e -> d.dispose());
+        btnCancelar = new BotonPlano("Cancelar", new Color(100, 116, 139), new Color(71, 85, 105));
+        btnGuardar = new BotonPlano("Guardar");
+        
+        btnCancelar.addActionListener(e -> dialogo.setVisible(false));
+        btnNuevoUsuario.addActionListener(e -> {
+            limpiarFormulario();
+            dialogo.setLocationRelativeTo(this);
+            dialogo.setVisible(true);
+        });
+        
         botones.add(btnCancelar);
         botones.add(btnGuardar);
         form.add(botones);
 
-        d.add(form);
-        d.setVisible(true);
+        dialogo.add(form);
+    }
+    
+    public void limpiarFormulario() {
+        txtNombre.setText("");
+        txtDocumento.setText("");
+        cbTipo.setSelectedIndex(0);
+        txtEmail.setText("");
+        txtCelular.setText("");
+    }
+
+    public DefaultTableModel getModeloTabla() { return modeloTabla; }
+    public JDialog getDialogo() { return dialogo; }
+    
+    public CampoTextoModerno getTxtNombre() { return txtNombre; }
+    public CampoTextoModerno getTxtDocumento() { return txtDocumento; }
+    public JComboBox<String> getCbTipo() { return cbTipo; }
+    public CampoTextoModerno getTxtEmail() { return txtEmail; }
+    public CampoTextoModerno getTxtCelular() { return txtCelular; }
+
+    public void setControlador(ActionListener c) {
+        btnGuardar.setActionCommand("Guardar");
+        btnGuardar.addActionListener(c);
     }
 }

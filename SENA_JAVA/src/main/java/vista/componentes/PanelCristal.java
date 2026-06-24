@@ -41,6 +41,6 @@ public class PanelCristal extends JPanel {
         g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 30, 30);
         
         g2.dispose();
-        super.paintComponent(g);
+        // NO llamamos a super.paintComponent() para no limpiar nuestro fondo pintado
     }
 }

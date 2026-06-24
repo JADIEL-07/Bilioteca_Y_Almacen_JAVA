@@ -25,7 +25,7 @@ public class VistaNotificaciones extends JPanel {
         headerPanel.setPreferredSize(new Dimension(0, 70));
         headerPanel.setBorder(new EmptyBorder(15, 20, 15, 20));
 
-        // Izquierda: Título y Badge
+        // Izquierda: TÃ­tulo y Badge
         JPanel pnlIzquierda = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 5));
         pnlIzquierda.setOpaque(false);
 
@@ -79,8 +79,8 @@ public class VistaNotificaciones extends JPanel {
         pnlDerecha.setOpaque(false);
 
         pnlDerecha.add(crearBotonFiltro("Todas", false, SenaColores.VERDE_SENA));
-        pnlDerecha.add(crearBotonFiltro("No leídas", true, SenaColores.VERDE_SENA));
-        pnlDerecha.add(crearBotonFiltro("Marcar leídas", false, new Color(148, 163, 184))); // Gris
+        pnlDerecha.add(crearBotonFiltro("No leÃ­das", true, SenaColores.VERDE_SENA));
+        pnlDerecha.add(crearBotonFiltro("Marcar leÃ­das", false, new Color(148, 163, 184))); // Gris
         pnlDerecha.add(crearBotonFiltro("Limpiar todo", false, new Color(239, 68, 68))); // Rojo
 
         headerPanel.add(pnlIzquierda, BorderLayout.WEST);
@@ -107,9 +107,9 @@ public class VistaNotificaciones extends JPanel {
         lista.setLayout(new BoxLayout(lista, BoxLayout.Y_AXIS));
         lista.setOpaque(false);
 
-        lista.add(crearTarjetaNotificacion("Nuevo inicio de sesión", "Se detectó un inicio de sesión en tu cuenta desde 127.0.0.1.", "24 de junio de 2026 a las 7:17 p. m.", true));
+        lista.add(crearTarjetaNotificacion("Nuevo inicio de sesiÃ³n", "Se detectÃ³ un inicio de sesiÃ³n en tu cuenta desde 127.0.0.1.", "24 de junio de 2026 a las 7:17 p. m.", true));
         lista.add(Box.createRigidArea(new Dimension(0, 15)));
-        lista.add(crearTarjetaNotificacion("Nuevo inicio de sesión", "Se detectó un inicio de sesión en tu cuenta desde 127.0.0.1.", "24 de junio de 2026 a las 7:16 p. m.", true));
+        lista.add(crearTarjetaNotificacion("Nuevo inicio de sesiÃ³n", "Se detectÃ³ un inicio de sesiÃ³n en tu cuenta desde 127.0.0.1.", "24 de junio de 2026 a las 7:16 p. m.", true));
 
         // Se usa un panel contenedor que empuja todo hacia arriba
         JPanel wrapper = new JPanel(new BorderLayout());

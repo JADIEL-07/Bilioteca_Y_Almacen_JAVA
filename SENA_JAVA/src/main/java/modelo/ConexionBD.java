@@ -6,31 +6,32 @@ import java.sql.SQLException;
 
 public class ConexionBD {
     
-    public static Connection conexion = getInstance().getConexionInternal();
-    private Connection conReal;
-
-    private ConexionBD() {
+    private static final String URL = "jdbc:postgresql://localhost:5432/biblioteca_db";
+    private static final String USUARIO = "postgres";
+    private static final String CLAVE = "12345";
+    
+    public static Connection conexion;
+    
+    static {
         try {
-            String driverBD = "org.postgresql.Driver";
-            
-            // Usamos localhost y la base de datos biblioteca_sena
-            String urlBD = "jdbc:postgresql://localhost:5432/biblioteca_sena";
-            String usuarioBD = "postgres"; 
-            String claveBD = "12345"; 
-            
-            Class.forName(driverBD);
-            conReal = DriverManager.getConnection(urlBD, usuarioBD, claveBD);
-            
-            System.out.println("¡Conexión establecida con éxito a PostgreSQL!");
+            Class.forName("org.postgresql.Driver");
+            conexion = DriverManager.getConnection(URL, USUARIO, CLAVE);
+            System.out.println("Conexion establecida con exito a PostgreSQL!");
         } catch (ClassNotFoundException ex) {
             System.err.println("No se encuentra el driver JDBC: " + ex.getMessage());
         } catch (SQLException ex) {
             System.err.println("Error de base de datos al conectar: " + ex.getMessage());
         }
     }
-    
-    private Connection getConexionInternal() {
-        return this.conReal;
+
+    private ConexionBD() {}
+
+    // Método usado por los modelos nuevos (MVC)
+    public Connection getConnection() throws SQLException {
+        if (conexion == null || conexion.isClosed()) {
+            conexion = DriverManager.getConnection(URL, USUARIO, CLAVE);
+        }
+        return conexion;
     }
 
     public static void desconectar() {
@@ -39,7 +40,7 @@ public class ConexionBD {
                 conexion.close();
             }
         } catch (SQLException ex) {
-            System.err.println("Error al cerrar conexión: " + ex.getMessage());
+            System.err.println("Error al cerrar conexion: " + ex.getMessage());
         }
     }
     

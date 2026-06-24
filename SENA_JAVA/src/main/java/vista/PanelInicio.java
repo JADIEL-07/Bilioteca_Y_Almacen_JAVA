@@ -46,18 +46,25 @@ public class PanelInicio extends JPanel {
         pnlContent.add(lblSub);
         pnlContent.add(Box.createRigidArea(new Dimension(0, 50)));
         
-        // Cards Grid
-        JPanel pnlGrid = new JPanel(new GridLayout(2, 3, 20, 20));
+        // Cards Grid - Usamos BoxLayout con dos filas para un centrado perfecto de 5 tarjetas (3 y 2)
+        JPanel pnlGrid = new JPanel();
+        pnlGrid.setLayout(new BoxLayout(pnlGrid, BoxLayout.Y_AXIS));
         pnlGrid.setOpaque(false);
-        pnlGrid.setMaximumSize(new Dimension(900, 450));
         pnlGrid.setAlignmentX(Component.CENTER_ALIGNMENT);
-        
-        pnlGrid.add(crearCard(0, "Todos los elementos", "Vista completa de todos los recursos institucionales.", false));
-        pnlGrid.add(crearCard(1, "Libros", "Gestion y reserva de material bibliografico institucional.", true));
-        pnlGrid.add(crearCard(2, "Equipos", "Prestamo y retorno de activos tecnicos especializados.", false));
-        pnlGrid.add(crearCard(3, "Insumos", "Suministros consumibles para programas tecnicos.", false));
-        pnlGrid.add(crearCard(4, "Herramientas", "Seguimiento en tiempo real de inventarios y existencias.", false));
-        pnlGrid.add(crearCard(5, "Asistente Personal", "Un asistente inteligente diseñado para guiarte y facilitar el flujo por toda la web.", false));
+
+        JPanel row1 = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 20));
+        row1.setOpaque(false);
+        row1.add(crearCard(0, "Todos los elementos", "Vista completa de todos los recursos institucionales.", false));
+        row1.add(crearCard(1, "Libros", "Gestion y reserva de material bibliografico institucional.", true));
+        row1.add(crearCard(2, "Equipos", "Prestamo y retorno de activos tecnicos especializados.", false));
+
+        JPanel row2 = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 20));
+        row2.setOpaque(false);
+        row2.add(crearCard(3, "Insumos", "Suministros consumibles para programas tecnicos.", false));
+        row2.add(crearCard(4, "Herramientas", "Seguimiento en tiempo real de inventarios y existencias.", false));
+
+        pnlGrid.add(row1);
+        pnlGrid.add(row2);
         
         pnlContent.add(pnlGrid);
         
@@ -94,7 +101,6 @@ public class PanelInicio extends JPanel {
         
         pnlRight.add(crearLink("INICIO", false));
         pnlRight.add(crearLink("CONTACTO", false));
-        pnlRight.add(crearLink("ASISTENTE PERSONAL", false));
         
         JLabel btnLogin = crearLink("INICIAR SESIÓN", true);
         btnLogin.addMouseListener(new MouseAdapter() {
@@ -197,18 +203,7 @@ public class PanelInicio extends JPanel {
                         g2.drawLine(cx + 3, cy - 3, cx - 6, cy + 6);
                         g2.drawLine(cx + 1, cy - 1, cx - 4, cy + 8);
                         break;
-                    case 5: // Chip (Asistente)
-                        g2.drawRect(cx - 6, cy - 6, 12, 12);
-                        g2.drawRect(cx - 2, cy - 2, 4, 4);
-                        g2.drawLine(cx - 8, cy - 2, cx - 6, cy - 2);
-                        g2.drawLine(cx - 8, cy + 2, cx - 6, cy + 2);
-                        g2.drawLine(cx + 6, cy - 2, cx + 8, cy - 2);
-                        g2.drawLine(cx + 6, cy + 2, cx + 8, cy + 2);
-                        g2.drawLine(cx - 2, cy - 8, cx - 2, cy - 6);
-                        g2.drawLine(cx + 2, cy - 8, cx + 2, cy - 6);
-                        g2.drawLine(cx - 2, cy + 6, cx - 2, cy + 8);
-                        g2.drawLine(cx + 2, cy + 6, cx + 2, cy + 8);
-                        break;
+
                 }
                 g2.dispose();
             }
