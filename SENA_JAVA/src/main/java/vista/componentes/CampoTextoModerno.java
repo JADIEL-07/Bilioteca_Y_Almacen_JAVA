@@ -63,6 +63,17 @@ public class CampoTextoModerno extends JTextField {
             if (iconType == 1) { // User icon
                 g2.drawOval(x + 4, y - 8, 8, 8); // Head
                 g2.drawArc(x, y + 2, 16, 12, 0, 180); // Shoulders
+            } else if (iconType == 2) { // Document/ID Card icon
+                g2.drawRoundRect(x, y - 7, 16, 12, 4, 4); // Card outline
+                g2.drawLine(x, y - 2, x + 16, y - 2); // Magnetic stripe/separator
+                g2.drawRect(x + 3, y + 1, 3, 2); // Small photo box
+            } else if (iconType == 3) { // Email icon
+                g2.drawRoundRect(x, y - 6, 16, 12, 2, 2); // Envelope outline
+                g2.drawLine(x, y - 6, x + 8, y); // Flap left
+                g2.drawLine(x + 16, y - 6, x + 8, y); // Flap right
+            } else if (iconType == 4) { // Phone icon
+                g2.drawRoundRect(x + 4, y - 8, 8, 14, 4, 4); // Phone body
+                g2.drawLine(x + 6, y + 3, x + 10, y + 3); // Home button line
             }
 
             g2.dispose();

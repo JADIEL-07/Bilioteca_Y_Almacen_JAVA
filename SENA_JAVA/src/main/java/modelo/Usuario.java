@@ -16,6 +16,7 @@ public class Usuario {
     private String email;
     private String celular;
     private String estado;
+    private String password;
     
     public Usuario() {}
 
@@ -40,8 +41,11 @@ public class Usuario {
     public String getEstado() { return estado; }
     public void setEstado(String estado) { this.estado = estado; }
 
+    public String getPassword() { return password; }
+    public void setPassword(String password) { this.password = password; }
+
     public boolean insertar() {
-        String sql = "INSERT INTO usuarios (nombre, documento, tipo, email, celular, estado) VALUES (?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO usuarios (nombre, documento, tipo, email, celular, estado, password) VALUES (?, ?, ?, ?, ?, ?, ?)";
         try {
             Connection con = ConexionBD.getInstance().getConnection();
             PreparedStatement ps = con.prepareStatement(sql);
@@ -51,6 +55,7 @@ public class Usuario {
             ps.setString(4, email);
             ps.setString(5, celular);
             ps.setString(6, estado);
+            ps.setString(7, password);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             System.err.println("Error al insertar usuario: " + e.getMessage());
@@ -74,6 +79,10 @@ public class Usuario {
                 u.setEmail(rs.getString("email"));
                 u.setCelular(rs.getString("celular"));
                 u.setEstado(rs.getString("estado"));
+                // Solo leer password si existe (puede ser null en la BD)
+                try {
+                    u.setPassword(rs.getString("password"));
+                } catch (Exception ex) {}
                 lista.add(u);
             }
         } catch (SQLException e) {
@@ -90,12 +99,22 @@ public class Usuario {
                      "tipo VARCHAR(50) NOT NULL, " +
                      "email VARCHAR(100), " +
                      "celular VARCHAR(20), " +
-                     "estado VARCHAR(50) DEFAULT 'Activo')";
+                     "estado VARCHAR(50) DEFAULT 'Activo', " +
+                     "password VARCHAR(255))";
         try {
             Connection con = ConexionBD.getInstance().getConnection();
             PreparedStatement ps = con.prepareStatement(sql);
             ps.execute();
             System.out.println("Tabla 'usuarios' verificada/creada.");
+            
+            // Add column if it doesn't exist (for existing tables)
+            try {
+                PreparedStatement psAlt = con.prepareStatement("ALTER TABLE usuarios ADD COLUMN password VARCHAR(255)");
+                psAlt.execute();
+            } catch (SQLException ignore) {
+                // Column probably already exists
+            }
+            
         } catch (SQLException e) {
             System.err.println("Error al crear tabla usuarios: " + e.getMessage());
         }

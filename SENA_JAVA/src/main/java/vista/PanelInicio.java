@@ -27,48 +27,26 @@ public class PanelInicio extends JPanel {
         JPanel pnlCenterWrapper = new JPanel(new GridBagLayout());
         pnlCenterWrapper.setOpaque(false);
         
-        JPanel pnlContent = new JPanel();
-        pnlContent.setLayout(new BoxLayout(pnlContent, BoxLayout.Y_AXIS));
-        pnlContent.setOpaque(false);
-        
-        // Titulo
-        JLabel lblTitulo = new JLabel("SISTEMA INTEGRAL: BIBLIOTECA, ALMACÉN E INVENTARIO");
-        lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 28));
-        lblTitulo.setForeground(Color.WHITE);
-        lblTitulo.setAlignmentX(Component.CENTER_ALIGNMENT);
-        
-        JLabel lblSub = new JLabel("<html><div style='text-align: center; color: #94a3b8;'>Gestión unificada de material bibliográfico, equipos, herramientas e insumos para el centro de<br>formación.</div></html>");
-        lblSub.setFont(new Font("Segoe UI", Font.PLAIN, 15));
-        lblSub.setAlignmentX(Component.CENTER_ALIGNMENT);
-        
-        pnlContent.add(lblTitulo);
-        pnlContent.add(Box.createRigidArea(new Dimension(0, 15)));
-        pnlContent.add(lblSub);
-        pnlContent.add(Box.createRigidArea(new Dimension(0, 50)));
-        
-        // Cards Grid - Usamos BoxLayout con dos filas para un centrado perfecto de 5 tarjetas (3 y 2)
+        // Cards Grid
         JPanel pnlGrid = new JPanel();
         pnlGrid.setLayout(new BoxLayout(pnlGrid, BoxLayout.Y_AXIS));
         pnlGrid.setOpaque(false);
-        pnlGrid.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        JPanel row1 = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 20));
+        JPanel row1 = new JPanel(new FlowLayout(FlowLayout.CENTER, 25, 25));
         row1.setOpaque(false);
         row1.add(crearCard(0, "Todos los elementos", "Vista completa de todos los recursos institucionales.", false));
-        row1.add(crearCard(1, "Libros", "Gestion y reserva de material bibliografico institucional.", true));
-        row1.add(crearCard(2, "Equipos", "Prestamo y retorno de activos tecnicos especializados.", false));
+        row1.add(crearCard(1, "Libros", "Gestión y reserva de material bibliográfico institucional.", true));
+        row1.add(crearCard(2, "Equipos", "Préstamo y retorno de activos técnicos especializados.", false));
 
-        JPanel row2 = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 20));
+        JPanel row2 = new JPanel(new FlowLayout(FlowLayout.CENTER, 25, 25));
         row2.setOpaque(false);
-        row2.add(crearCard(3, "Insumos", "Suministros consumibles para programas tecnicos.", false));
+        row2.add(crearCard(3, "Insumos", "Suministros consumibles para programas técnicos.", false));
         row2.add(crearCard(4, "Herramientas", "Seguimiento en tiempo real de inventarios y existencias.", false));
 
         pnlGrid.add(row1);
         pnlGrid.add(row2);
         
-        pnlContent.add(pnlGrid);
-        
-        pnlCenterWrapper.add(pnlContent);
+        pnlCenterWrapper.add(pnlGrid);
         add(pnlCenterWrapper, BorderLayout.CENTER);
     }
 
@@ -112,6 +90,9 @@ public class PanelInicio extends JPanel {
         
         BotonPlano btnCrear = new BotonPlano("CREAR CUENTA");
         btnCrear.setPreferredSize(new Dimension(140, 35));
+        btnCrear.addActionListener(e -> {
+            cardLayout.show(cardsContainer, "Registro");
+        });
         pnlRight.add(btnCrear);
 
         nav.add(pnlLeft, BorderLayout.WEST);
@@ -138,21 +119,20 @@ public class PanelInicio extends JPanel {
     private PanelCristal crearCard(int type, String titulo, String desc, boolean active) {
         PanelCristal card = new PanelCristal();
         card.setActive(active);
-        card.setLayout(new GridBagLayout());
-        card.setPreferredSize(new Dimension(280, 200));
+        
+        // Usamos BoxLayout vertical para centrado infalible
+        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+        card.setPreferredSize(new Dimension(280, 210));
+        card.setBorder(new EmptyBorder(25, 20, 25, 20));
         
         card.addMouseListener(new MouseAdapter() {
             public void mouseEntered(MouseEvent e) { card.setHovered(true); }
             public void mouseExited(MouseEvent e) { card.setHovered(false); }
         });
 
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.insets = new Insets(5, 20, 5, 20);
-        
-        int y = 0;
-        
+        // Contenedor que empuja hacia el centro
+        card.add(Box.createVerticalGlue());
+
         // Icon in circle
         JPanel pnlIcon = new JPanel() {
             @Override
@@ -161,7 +141,7 @@ public class PanelInicio extends JPanel {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 
-                int s = 46;
+                int s = 50;
                 int x = (getWidth() - s) / 2;
                 int y = (getHeight() - s) / 2;
                 
@@ -173,63 +153,63 @@ public class PanelInicio extends JPanel {
                 
                 int cx = getWidth() / 2;
                 int cy = getHeight() / 2;
-                int is = 16; // icon size
                 
                 switch (type) {
                     case 0: // Stack (Todos)
-                        g2.drawLine(cx - 8, cy - 2, cx, cy - 6);
-                        g2.drawLine(cx, cy - 6, cx + 8, cy - 2);
-                        g2.drawLine(cx - 8, cy - 2, cx, cy + 2);
-                        g2.drawLine(cx, cy + 2, cx + 8, cy - 2);
+                        g2.drawLine(cx - 10, cy - 3, cx, cy - 8);
+                        g2.drawLine(cx, cy - 8, cx + 10, cy - 3);
+                        g2.drawLine(cx - 10, cy - 3, cx, cy + 2);
+                        g2.drawLine(cx, cy + 2, cx + 10, cy - 3);
                         
-                        g2.drawLine(cx - 8, cy + 2, cx, cy + 6);
-                        g2.drawLine(cx, cy + 6, cx + 8, cy + 2);
+                        g2.drawLine(cx - 10, cy + 3, cx, cy + 8);
+                        g2.drawLine(cx, cy + 8, cx + 10, cy + 3);
                         break;
                     case 1: // Libros
-                        g2.drawRect(cx - 8, cy - 6, 8, 12);
-                        g2.drawRect(cx, cy - 6, 8, 12);
+                        g2.drawRect(cx - 10, cy - 8, 10, 14);
+                        g2.drawRect(cx, cy - 8, 10, 14);
                         break;
                     case 2: // Equipos (Monitor)
-                        g2.drawRect(cx - 10, cy - 8, 20, 12);
-                        g2.drawLine(cx - 4, cy + 8, cx + 4, cy + 8);
-                        g2.drawLine(cx, cy + 4, cx, cy + 8);
+                        g2.drawRect(cx - 12, cy - 10, 24, 14);
+                        g2.drawLine(cx - 6, cy + 10, cx + 6, cy + 10);
+                        g2.drawLine(cx, cy + 4, cx, cy + 10);
                         break;
                     case 3: // Insumos (Caja)
-                        g2.drawRect(cx - 8, cy - 6, 16, 12);
-                        g2.drawLine(cx - 8, cy, cx + 8, cy);
+                        g2.drawRect(cx - 10, cy - 8, 20, 14);
+                        g2.drawLine(cx - 10, cy, cx + 10, cy);
                         break;
                     case 4: // Herramientas (Llave)
-                        g2.drawOval(cx + 2, cy - 8, 6, 6);
-                        g2.drawLine(cx + 3, cy - 3, cx - 6, cy + 6);
-                        g2.drawLine(cx + 1, cy - 1, cx - 4, cy + 8);
+                        g2.drawOval(cx + 3, cy - 10, 8, 8);
+                        g2.drawLine(cx + 4, cy - 4, cx - 8, cy + 8);
+                        g2.drawLine(cx + 2, cy - 2, cx - 6, cy + 10);
                         break;
-
                 }
                 g2.dispose();
             }
         };
         pnlIcon.setOpaque(false);
-        pnlIcon.setPreferredSize(new Dimension(50, 50));
-        gbc.gridy = y++;
-        card.add(pnlIcon, gbc);
+        pnlIcon.setPreferredSize(new Dimension(60, 60));
+        pnlIcon.setMinimumSize(new Dimension(60, 60));
+        pnlIcon.setMaximumSize(new Dimension(60, 60));
+        pnlIcon.setAlignmentX(Component.CENTER_ALIGNMENT);
+        card.add(pnlIcon);
         
-        gbc.gridy = y++;
-        card.add(Box.createRigidArea(new Dimension(0, 10)), gbc);
+        card.add(Box.createRigidArea(new Dimension(0, 15)));
         
-        JLabel lblTit = new JLabel(titulo, SwingConstants.CENTER);
-        lblTit.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        JLabel lblTit = new JLabel(titulo);
+        lblTit.setFont(new Font("Segoe UI", Font.BOLD, 15));
         lblTit.setForeground(Color.WHITE);
-        gbc.gridy = y++;
-        card.add(lblTit, gbc);
+        lblTit.setAlignmentX(Component.CENTER_ALIGNMENT);
+        card.add(lblTit);
         
-        gbc.gridy = y++;
-        card.add(Box.createRigidArea(new Dimension(0, 8)), gbc);
+        card.add(Box.createRigidArea(new Dimension(0, 10)));
         
         JLabel lblDesc = new JLabel("<html><div style='text-align: center;'>"+desc+"</div></html>");
         lblDesc.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         lblDesc.setForeground(new Color(203, 213, 225)); // Slate 300
-        gbc.gridy = y++;
-        card.add(lblDesc, gbc);
+        lblDesc.setAlignmentX(Component.CENTER_ALIGNMENT);
+        card.add(lblDesc);
+
+        card.add(Box.createVerticalGlue());
 
         return card;
     }
