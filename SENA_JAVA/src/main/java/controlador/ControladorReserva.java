@@ -7,7 +7,9 @@ import java.awt.event.KeyEvent;
 import java.util.List;
 import javax.swing.JOptionPane;
 import javax.swing.SwingWorker;
+import javax.swing.Timer;
 import javax.swing.table.DefaultTableModel;
+import modelo.AuditLog;
 import modelo.Reserva;
 import vista.VistaReservas;
 
@@ -15,6 +17,7 @@ public class ControladorReserva implements ActionListener, KeyListener {
     
     private VistaReservas vista;
     private Reserva modelo;
+    private Timer autoRefresh;
     
     public ControladorReserva(VistaReservas vista, Reserva modelo) {
         this.vista = vista;
@@ -32,6 +35,8 @@ public class ControladorReserva implements ActionListener, KeyListener {
         }
         
         cargarDatosTabla("");
+        autoRefresh = new Timer(30000, e -> cargarDatosTabla(vista.getTxtBuscar().getText()));
+        autoRefresh.start();
     }
     
     public void cargarDatosTabla(String filtro) {
@@ -92,6 +97,7 @@ public class ControladorReserva implements ActionListener, KeyListener {
             modelo.setEstado("Pendiente");
             
             if (modelo.insertar()) {
+                AuditLog.registrar("admin", "CREATE", "Reservas", "Item: " + codigo + " / Usuario: " + documento);
                 JOptionPane.showMessageDialog(vista, "Reserva registrada con éxito.");
                 vista.getDialogo().setVisible(false);
                 vista.limpiarFormulario();

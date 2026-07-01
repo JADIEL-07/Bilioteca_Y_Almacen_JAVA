@@ -33,17 +33,22 @@ public class Mantenimiento {
     public void setEstado(String estado) { this.estado = estado; }
 
     public boolean insertar() {
-        String sql = "INSERT INTO maintenance (item_id, failure_description, status, report_date) " +
-                     "VALUES ((SELECT id FROM items WHERE code = ? LIMIT 1), ?, ?, NOW())";
-        try (Connection con = ConexionBD.getInstance().getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, codigoItem);
-            ps.setString(2, descripcion);
-            ps.setString(3, estado != null ? estado.toUpperCase() : "PENDING");
-            return ps.executeUpdate() > 0;
+        Connection con = null;
+        try {
+            con = ConexionBD.getInstance().getConnection();
+            String sql = "INSERT INTO maintenance (item_id, failure_description, status, report_date) " +
+                         "VALUES ((SELECT id FROM items WHERE code = ? LIMIT 1), ?, ?, NOW())";
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+                ps.setString(1, codigoItem);
+                ps.setString(2, descripcion);
+                ps.setString(3, estado != null ? estado.toUpperCase() : "PENDING");
+                return ps.executeUpdate() > 0;
+            }
         } catch (SQLException e) {
             System.err.println("Error al insertar mantenimiento: " + e.getMessage());
             return false;
+        } finally {
+            if (con != null) ConexionBD.getInstance().releaseConnection(con);
         }
     }
     
@@ -53,47 +58,57 @@ public class Mantenimiento {
                      "FROM maintenance m " +
                      "LEFT JOIN items i ON m.item_id = i.id " +
                      "ORDER BY m.id DESC";
-        try (Connection con = ConexionBD.getInstance().getConnection();
-             PreparedStatement ps = con.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) {
-                Mantenimiento m = new Mantenimiento();
-                m.setId(rs.getInt("id"));
-                m.setCodigoItem(rs.getString("codigo_item") != null ? rs.getString("codigo_item") : "N/A");
-                m.setDescripcion(rs.getString("failure_description"));
-                java.sql.Timestamp ts = rs.getTimestamp("report_date");
-                m.setFechaEnvio(ts != null ? ts.toLocalDateTime().toLocalDate().toString() : "");
-                m.setEstado(rs.getString("status"));
-                lista.add(m);
+        Connection con = null;
+        try {
+            con = ConexionBD.getInstance().getConnection();
+            try (PreparedStatement ps = con.prepareStatement(sql);
+                 ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Mantenimiento m = new Mantenimiento();
+                    m.setId(rs.getInt("id"));
+                    m.setCodigoItem(rs.getString("codigo_item") != null ? rs.getString("codigo_item") : "N/A");
+                    m.setDescripcion(rs.getString("failure_description"));
+                    java.sql.Timestamp ts = rs.getTimestamp("report_date");
+                    m.setFechaEnvio(ts != null ? ts.toLocalDateTime().toLocalDate().toString() : "");
+                    m.setEstado(rs.getString("status"));
+                    lista.add(m);
+                }
             }
         } catch (SQLException e) {
             System.err.println("Error al listar mantenimientos: " + e.getMessage());
+        } finally {
+            if (con != null) ConexionBD.getInstance().releaseConnection(con);
         }
         return lista;
     }
     
     public List<Mantenimiento> buscar(String texto) {
         List<Mantenimiento> lista = new ArrayList<>();
-        String sql = "SELECT m.id, m.failure_description, m.status, i.code AS codigo_item " +
+        String sql = "SELECT m.id, i.code AS codigo_item, m.failure_description, m.status " +
                      "FROM maintenance m " +
                      "LEFT JOIN items i ON m.item_id = i.id " +
                      "WHERE m.is_deleted = false AND (m.failure_description ILIKE ? OR m.status ILIKE ?) ORDER BY m.id DESC";
-        try (Connection con = ConexionBD.getInstance().getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, "%" + texto + "%");
-            ps.setString(2, "%" + texto + "%");
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    Mantenimiento m = new Mantenimiento();
-                    m.setId(rs.getInt("id"));
-                    m.setCodigoItem(rs.getString("codigo_item") != null ? rs.getString("codigo_item") : "N/A");
-                    m.setDescripcion(rs.getString("failure_description"));
-                    m.setEstado(rs.getString("status"));
-                    lista.add(m);
+        Connection con = null;
+        try {
+            con = ConexionBD.getInstance().getConnection();
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+                ps.setString(1, "%" + texto + "%");
+                ps.setString(2, "%" + texto + "%");
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        Mantenimiento m = new Mantenimiento();
+                        m.setId(rs.getInt("id"));
+                        m.setCodigoItem(rs.getString("codigo_item") != null ? rs.getString("codigo_item") : "N/A");
+                        m.setDescripcion(rs.getString("failure_description"));
+                        m.setEstado(rs.getString("status"));
+                        lista.add(m);
+                    }
                 }
             }
         } catch (SQLException e) {
             System.err.println("Error al buscar mantenimientos: " + e.getMessage());
+        } finally {
+            if (con != null) ConexionBD.getInstance().releaseConnection(con);
         }
         return lista;
     }

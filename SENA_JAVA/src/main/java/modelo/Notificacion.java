@@ -38,37 +38,45 @@ public class Notificacion {
     public void setLeida(boolean leida) { this.leida = leida; }
 
     public static void inicializarTabla() {
-        try (Connection con = ConexionBD.getInstance().getConnection();
-             Statement stmt = con.createStatement()) {
+        Connection con = null;
+        try {
+            con = ConexionBD.getInstance().getConnection();
+            try (Statement stmt = con.createStatement()) {
+                stmt.execute("CREATE TABLE IF NOT EXISTS notifications ("
+                           + "id SERIAL PRIMARY KEY, "
+                           + "title VARCHAR(255) NOT NULL, "
+                           + "message TEXT NOT NULL, "
+                           + "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, "
+                           + "is_read BOOLEAN DEFAULT FALSE"
+                           + ")");
 
-            stmt.execute("CREATE TABLE IF NOT EXISTS notifications ("
-                       + "id SERIAL PRIMARY KEY, "
-                       + "title VARCHAR(255) NOT NULL, "
-                       + "message TEXT NOT NULL, "
-                       + "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, "
-                       + "is_read BOOLEAN DEFAULT FALSE"
-                       + ")");
-
-            try {
-                stmt.execute("ALTER TABLE notifications ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
-            } catch (SQLException ignored) {
+                try {
+                    stmt.execute("ALTER TABLE notifications ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
+                } catch (SQLException ignored) {
+                }
             }
-
         } catch (SQLException e) {
             System.err.println("Error al inicializar tabla notifications: " + e.getMessage());
+        } finally {
+            if (con != null) ConexionBD.getInstance().releaseConnection(con);
         }
     }
 
     public boolean insertar() {
-        String sql = "INSERT INTO notifications (title, message) VALUES (?, ?)";
-        try (Connection con = ConexionBD.getInstance().getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, titulo);
-            ps.setString(2, mensaje);
-            return ps.executeUpdate() > 0;
+        Connection con = null;
+        try {
+            con = ConexionBD.getInstance().getConnection();
+            String sql = "INSERT INTO notifications (title, message) VALUES (?, ?)";
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+                ps.setString(1, titulo);
+                ps.setString(2, mensaje);
+                return ps.executeUpdate() > 0;
+            }
         } catch (SQLException e) {
             System.err.println("Error al insertar notificacion: " + e.getMessage());
             return false;
+        } finally {
+            if (con != null) ConexionBD.getInstance().releaseConnection(con);
         }
     }
 
@@ -81,70 +89,94 @@ public class Notificacion {
         }
         sql += "ORDER BY created_at DESC LIMIT 50";
         
-        try (Connection con = ConexionBD.getInstance().getConnection();
-             PreparedStatement ps = con.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-             
-            while (rs.next()) {
-                Notificacion notif = new Notificacion(
-                    rs.getInt("id"),
-                    rs.getString("title"),
-                    rs.getString("message"),
-                    rs.getString("fecha_fmt"),
-                    rs.getBoolean("is_read")
-                );
-                lista.add(notif);
+        Connection con = null;
+        try {
+            con = ConexionBD.getInstance().getConnection();
+            try (PreparedStatement ps = con.prepareStatement(sql);
+                 ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Notificacion notif = new Notificacion(
+                        rs.getInt("id"),
+                        rs.getString("title"),
+                        rs.getString("message"),
+                        rs.getString("fecha_fmt"),
+                        rs.getBoolean("is_read")
+                    );
+                    lista.add(notif);
+                }
             }
         } catch (SQLException e) {
             System.err.println("Error al listar notificaciones: " + e.getMessage());
+        } finally {
+            if (con != null) ConexionBD.getInstance().releaseConnection(con);
         }
         return lista;
     }
 
     public boolean marcarComoLeida(int idNotificacion) {
-        String sql = "UPDATE notifications SET is_read = true WHERE id = ?";
-        try (Connection con = ConexionBD.getInstance().getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setInt(1, idNotificacion);
-            return ps.executeUpdate() > 0;
+        Connection con = null;
+        try {
+            con = ConexionBD.getInstance().getConnection();
+            String sql = "UPDATE notifications SET is_read = true WHERE id = ?";
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+                ps.setInt(1, idNotificacion);
+                return ps.executeUpdate() > 0;
+            }
         } catch (SQLException e) {
             System.err.println("Error al marcar como leida: " + e.getMessage());
             return false;
+        } finally {
+            if (con != null) ConexionBD.getInstance().releaseConnection(con);
         }
     }
 
     public boolean marcarTodasComoLeidas() {
-        String sql = "UPDATE notifications SET is_read = true WHERE is_read = false";
-        try (Connection con = ConexionBD.getInstance().getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            return ps.executeUpdate() > 0;
+        Connection con = null;
+        try {
+            con = ConexionBD.getInstance().getConnection();
+            String sql = "UPDATE notifications SET is_read = true WHERE is_read = false";
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+                return ps.executeUpdate() > 0;
+            }
         } catch (SQLException e) {
             System.err.println("Error al marcar todas como leidas: " + e.getMessage());
             return false;
+        } finally {
+            if (con != null) ConexionBD.getInstance().releaseConnection(con);
         }
     }
     
     public boolean limpiarTodo() {
-        String sql = "DELETE FROM notifications";
-        try (Connection con = ConexionBD.getInstance().getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            return ps.executeUpdate() > 0;
+        Connection con = null;
+        try {
+            con = ConexionBD.getInstance().getConnection();
+            String sql = "DELETE FROM notifications";
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+                return ps.executeUpdate() > 0;
+            }
         } catch (SQLException e) {
             System.err.println("Error al limpiar notificaciones: " + e.getMessage());
             return false;
+        } finally {
+            if (con != null) ConexionBD.getInstance().releaseConnection(con);
         }
     }
 
     public int contarNoLeidas() {
-        String sql = "SELECT COUNT(*) FROM notifications WHERE is_read = false";
-        try (Connection con = ConexionBD.getInstance().getConnection();
-             PreparedStatement ps = con.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-            if (rs.next()) {
-                return rs.getInt(1);
+        Connection con = null;
+        try {
+            con = ConexionBD.getInstance().getConnection();
+            String sql = "SELECT COUNT(*) FROM notifications WHERE is_read = false";
+            try (PreparedStatement ps = con.prepareStatement(sql);
+                 ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
             }
         } catch (SQLException e) {
             System.err.println("Error al contar no leidas: " + e.getMessage());
+        } finally {
+            if (con != null) ConexionBD.getInstance().releaseConnection(con);
         }
         return 0;
     }

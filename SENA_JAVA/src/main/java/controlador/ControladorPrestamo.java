@@ -7,7 +7,9 @@ import java.awt.event.KeyEvent;
 import java.util.List;
 import javax.swing.JOptionPane;
 import javax.swing.SwingWorker;
+import javax.swing.Timer;
 import javax.swing.table.DefaultTableModel;
+import modelo.AuditLog;
 import modelo.Prestamo;
 import vista.VistaPrestamos;
 
@@ -15,6 +17,7 @@ public class ControladorPrestamo implements ActionListener, KeyListener {
     
     private VistaPrestamos vista;
     private Prestamo modelo;
+    private Timer autoRefresh;
     
     public ControladorPrestamo(VistaPrestamos vista, Prestamo modelo) {
         this.vista = vista;
@@ -32,6 +35,8 @@ public class ControladorPrestamo implements ActionListener, KeyListener {
         }
         
         cargarDatosTabla("");
+        autoRefresh = new Timer(30000, e -> cargarDatosTabla(vista.getTxtBuscar().getText()));
+        autoRefresh.start();
     }
     
     public void cargarDatosTabla(String filtro) {
@@ -94,6 +99,7 @@ public class ControladorPrestamo implements ActionListener, KeyListener {
             modelo.setEstado("Activo");
             
             if (modelo.insertar()) {
+                AuditLog.registrar("admin", "CREATE", "Préstamos", "Item: " + codigo + " / Usuario: " + documento);
                 JOptionPane.showMessageDialog(vista, "Préstamo registrado con éxito.");
                 vista.getDialogo().setVisible(false);
                 vista.limpiarFormulario();

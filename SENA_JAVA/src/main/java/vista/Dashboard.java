@@ -9,6 +9,7 @@ import controlador.ControladorMantenimiento;
 import controlador.ControladorPrestamo;
 import controlador.ControladorReserva;
 import controlador.ControladorUsuario;
+import controlador.ControladorAuditLog;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
@@ -18,6 +19,7 @@ import modelo.Mantenimiento;
 import modelo.Prestamo;
 import modelo.Reserva;
 import modelo.Usuario;
+import modelo.AuditLog;
 
 public class Dashboard extends JFrame {
 
@@ -99,7 +101,10 @@ public class Dashboard extends JFrame {
         Usuario modeloUsuario = new Usuario();
         ControladorUsuario ctrlUsuario = new ControladorUsuario(vistaUsuarios, modeloUsuario);
         contenedorCentral.add(vistaUsuarios,                       "Usuarios");
-        contenedorCentral.add(new VistaAuditoria(),                "Auditoría");
+        VistaAuditoria vistaAuditoria = new VistaAuditoria();
+        AuditLog modeloAuditLog = new AuditLog();
+        ControladorAuditLog ctrlAuditLog = new ControladorAuditLog(vistaAuditoria, modeloAuditLog);
+        contenedorCentral.add(vistaAuditoria,                      "Auditoría");
         // --- Integración del Módulo de Notificaciones (MVC) ---
         VistaNotificaciones vistaNotificaciones = new VistaNotificaciones();
         modelo.Notificacion modeloNotificacion = new modelo.Notificacion();

@@ -7,18 +7,17 @@ import java.awt.event.KeyListener;
 import java.util.List;
 import javax.swing.JOptionPane;
 import javax.swing.SwingWorker;
+import javax.swing.Timer;
 import javax.swing.table.DefaultTableModel;
+import modelo.AuditLog;
 import modelo.Usuario;
 import vista.VistaUsuarios;
 
-/**
- * Controlador actualizado con carga asíncrona (SwingWorker) y etiqueta flotante
- * en los campos de búsqueda.
- */
 public class ControladorUsuario implements ActionListener, KeyListener {
 
     private VistaUsuarios vista;
     private Usuario modelo;
+    private Timer autoRefresh;
 
     public ControladorUsuario(VistaUsuarios vista, Usuario modelo) {
         this.vista = vista;
@@ -36,6 +35,8 @@ public class ControladorUsuario implements ActionListener, KeyListener {
         }
 
         cargarDatosTabla("");
+        autoRefresh = new Timer(30000, e -> cargarDatosTabla(vista.getTxtBuscar().getText()));
+        autoRefresh.start();
     }
 
     /** Carga la tabla de usuarios de forma asíncrona */
@@ -57,17 +58,10 @@ public class ControladorUsuario implements ActionListener, KeyListener {
             protected void done() {
                 try {
                     List<Usuario> lista = get();
-                    if (lista != null && !lista.isEmpty()) {
+                    if (lista != null) {
                         for (Usuario u : lista) {
                             tablaModelo.addRow(obtenerFila(u));
                         }
-                    } else {
-                        // Datos de demostración cuando la BD está vacía
-                        tablaModelo.addRow(new Object[]{1, "Carlos Andrés Pérez", "1098765432", "Aprendiz", "carlos.perez@sena.edu.co", "3201234567", "Activo"});
-                        tablaModelo.addRow(new Object[]{2, "María Fernanda López", "52987654", "Instructor", "maria.lopez@sena.edu.co", "3109876543", "Activo"});
-                        tablaModelo.addRow(new Object[]{3, "Juan David Rodríguez", "80123456", "Administrativo", "juan.rodriguez@sena.edu.co", "3154567890", "Activo"});
-                        tablaModelo.addRow(new Object[]{4, "Ana Sofía Martínez", "1023456789", "Aprendiz", "ana.martinez@sena.edu.co", "3001122334", "Activo"});
-                        tablaModelo.addRow(new Object[]{5, "Diego Alejandro Torres", "79654321", "Instructor", "diego.torres@sena.edu.co", "3187654321", "Inactivo"});
                     }
                 } catch (Exception e) {
                     System.err.println("Error al cargar tabla usuarios: " + e.getMessage());
@@ -99,6 +93,7 @@ public class ControladorUsuario implements ActionListener, KeyListener {
             modelo.setEstado("Activo");
 
             if (modelo.insertar()) {
+                AuditLog.registrar("admin", "CREATE", "Usuarios", "Usuario: " + nombre + " (" + documento + ")");
                 JOptionPane.showMessageDialog(vista, "Usuario registrado con éxito.");
                 vista.getDialogo().setVisible(false);
                 vista.limpiarFormulario();

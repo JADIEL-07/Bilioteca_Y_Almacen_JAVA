@@ -5,6 +5,7 @@ import java.awt.event.MouseEvent;
 import java.util.List;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.Timer;
 import modelo.Notificacion;
 import vista.VistaNotificaciones;
 
@@ -13,6 +14,7 @@ public class ControladorNotificaciones {
     private VistaNotificaciones vista;
     private Notificacion modelo;
     private boolean verSoloNoLeidas = false;
+    private Timer autoRefresh;
 
     public ControladorNotificaciones(VistaNotificaciones vista, Notificacion modelo) {
         this.vista = vista;
@@ -26,6 +28,8 @@ public class ControladorNotificaciones {
 
         inicializarEventos();
         cargarNotificaciones();
+        autoRefresh = new Timer(30000, e -> cargarNotificaciones());
+        autoRefresh.start();
     }
 
     private void inicializarEventos() {

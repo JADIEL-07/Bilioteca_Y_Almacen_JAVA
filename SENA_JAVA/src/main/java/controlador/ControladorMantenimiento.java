@@ -7,7 +7,9 @@ import java.awt.event.KeyEvent;
 import java.util.List;
 import javax.swing.JOptionPane;
 import javax.swing.SwingWorker;
+import javax.swing.Timer;
 import javax.swing.table.DefaultTableModel;
+import modelo.AuditLog;
 import modelo.Mantenimiento;
 import vista.VistaMantenimiento;
 
@@ -15,6 +17,7 @@ public class ControladorMantenimiento implements ActionListener, KeyListener {
     
     private VistaMantenimiento vista;
     private Mantenimiento modelo;
+    private Timer autoRefresh;
     
     public ControladorMantenimiento(VistaMantenimiento vista, Mantenimiento modelo) {
         this.vista = vista;
@@ -32,6 +35,8 @@ public class ControladorMantenimiento implements ActionListener, KeyListener {
         }
         
         cargarDatosTabla("");
+        autoRefresh = new Timer(30000, e -> cargarDatosTabla(vista.getTxtBuscar().getText()));
+        autoRefresh.start();
     }
     
     public void cargarDatosTabla(String filtro) {
@@ -92,6 +97,7 @@ public class ControladorMantenimiento implements ActionListener, KeyListener {
             modelo.setEstado("En progreso");
             
             if (modelo.insertar()) {
+                AuditLog.registrar("admin", "CREATE", "Mantenimiento", "Equipo: " + codigo + " - " + descripcion);
                 JOptionPane.showMessageDialog(vista, "Envio a mantenimiento registrado.");
                 vista.getDialogo().setVisible(false);
                 vista.limpiarFormulario();

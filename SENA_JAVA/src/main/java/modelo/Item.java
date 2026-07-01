@@ -51,8 +51,8 @@ public class Item {
             String estadoFinal = (estado != null && !estado.isEmpty()) ? estado : "Disponible";
             int statusId = resolverReferencia(con, "statuses", estadoFinal);
 
-            String sql = "INSERT INTO items (name, code, category_id, stock, location_id, status_id) "
-                       + "VALUES (?, ?, ?, ?, ?, ?)";
+            String sql = "INSERT INTO items (name, code, category_id, stock, location_id, status_id, is_deleted) "
+                       + "VALUES (?, ?, ?, ?, ?, ?, false)";
             try (PreparedStatement ps = con.prepareStatement(sql)) {
                 ps.setString(1, nombre);
                 ps.setString(2, codigo);
@@ -94,29 +94,46 @@ public class Item {
     }
     
     public boolean modificar() {
-        String sql = "UPDATE items SET name=?, code=?, stock=? WHERE id=?";
-        try (Connection con = ConexionBD.getInstance().getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, nombre);
-            ps.setString(2, codigo);
-            ps.setInt(3, cantidad);
-            ps.setInt(4, id);
-            return ps.executeUpdate() > 0;
+        Connection con = null;
+        try {
+            con = ConexionBD.getInstance().getConnection();
+            int categoryId = resolverReferencia(con, "categories", categoria);
+            int locationId = resolverReferencia(con, "locations", ubicacion);
+            String estadoFinal = (estado != null && !estado.isEmpty()) ? estado : "Disponible";
+            int statusId = resolverReferencia(con, "statuses", estadoFinal);
+            String sql = "UPDATE items SET name=?, code=?, category_id=?, stock=?, location_id=?, status_id=? WHERE id=?";
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+                ps.setString(1, nombre);
+                ps.setString(2, codigo);
+                ps.setInt(3, categoryId);
+                ps.setInt(4, cantidad);
+                ps.setInt(5, locationId);
+                ps.setInt(6, statusId);
+                ps.setInt(7, id);
+                return ps.executeUpdate() > 0;
+            }
         } catch (SQLException e) {
             System.err.println("Error al modificar item: " + e.getMessage());
             return false;
+        } finally {
+            if (con != null) ConexionBD.getInstance().releaseConnection(con);
         }
     }
     
     public boolean eliminar() {
-        String sql = "UPDATE items SET is_deleted = true WHERE id=?";
-        try (Connection con = ConexionBD.getInstance().getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setInt(1, id);
-            return ps.executeUpdate() > 0;
+        Connection con = null;
+        try {
+            con = ConexionBD.getInstance().getConnection();
+            String sql = "UPDATE items SET is_deleted = true WHERE id=?";
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+                ps.setInt(1, id);
+                return ps.executeUpdate() > 0;
+            }
         } catch (SQLException e) {
             System.err.println("Error al eliminar item: " + e.getMessage());
             return false;
+        } finally {
+            if (con != null) ConexionBD.getInstance().releaseConnection(con);
         }
     }
     
@@ -128,22 +145,27 @@ public class Item {
                      "LEFT JOIN locations l ON i.location_id = l.id " +
                      "LEFT JOIN statuses s ON i.status_id = s.id " +
                      "WHERE i.is_deleted = false ORDER BY i.id DESC";
-        try (Connection con = ConexionBD.getInstance().getConnection();
-             PreparedStatement ps = con.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) {
-                Item item = new Item();
-                item.setId(rs.getInt("id"));
-                item.setNombre(rs.getString("name"));
-                item.setCodigo(rs.getString("code"));
-                item.setCategoria(rs.getString("categoria"));
-                item.setCantidad(rs.getInt("stock"));
-                item.setUbicacion(rs.getString("ubicacion"));
-                item.setEstado(rs.getString("estado"));
-                lista.add(item);
+        Connection con = null;
+        try {
+            con = ConexionBD.getInstance().getConnection();
+            try (PreparedStatement ps = con.prepareStatement(sql);
+                 ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Item item = new Item();
+                    item.setId(rs.getInt("id"));
+                    item.setNombre(rs.getString("name"));
+                    item.setCodigo(rs.getString("code"));
+                    item.setCategoria(rs.getString("categoria"));
+                    item.setCantidad(rs.getInt("stock"));
+                    item.setUbicacion(rs.getString("ubicacion"));
+                    item.setEstado(rs.getString("estado"));
+                    lista.add(item);
+                }
             }
         } catch (SQLException e) {
             System.err.println("Error al listar items: " + e.getMessage());
+        } finally {
+            if (con != null) ConexionBD.getInstance().releaseConnection(con);
         }
         return lista;
     }
@@ -156,24 +178,30 @@ public class Item {
                      "LEFT JOIN locations l ON i.location_id = l.id " +
                      "LEFT JOIN statuses s ON i.status_id = s.id " +
                      "WHERE i.is_deleted = false AND (i.name ILIKE ? OR i.code ILIKE ?)";
-        try (Connection con = ConexionBD.getInstance().getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, "%" + busqueda + "%");
-            ps.setString(2, "%" + busqueda + "%");
-            ResultSet rs = ps.executeQuery();
-            while (rs.next()) {
-                Item item = new Item();
-                item.setId(rs.getInt("id"));
-                item.setNombre(rs.getString("name"));
-                item.setCodigo(rs.getString("code"));
-                item.setCategoria(rs.getString("categoria"));
-                item.setCantidad(rs.getInt("stock"));
-                item.setUbicacion(rs.getString("ubicacion"));
-                item.setEstado(rs.getString("estado"));
-                lista.add(item);
+        Connection con = null;
+        try {
+            con = ConexionBD.getInstance().getConnection();
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+                ps.setString(1, "%" + busqueda + "%");
+                ps.setString(2, "%" + busqueda + "%");
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        Item item = new Item();
+                        item.setId(rs.getInt("id"));
+                        item.setNombre(rs.getString("name"));
+                        item.setCodigo(rs.getString("code"));
+                        item.setCategoria(rs.getString("categoria"));
+                        item.setCantidad(rs.getInt("stock"));
+                        item.setUbicacion(rs.getString("ubicacion"));
+                        item.setEstado(rs.getString("estado"));
+                        lista.add(item);
+                    }
+                }
             }
         } catch (SQLException e) {
             System.err.println("Error al buscar items: " + e.getMessage());
+        } finally {
+            if (con != null) ConexionBD.getInstance().releaseConnection(con);
         }
         return lista;
     }

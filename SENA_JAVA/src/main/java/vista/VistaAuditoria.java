@@ -4,8 +4,14 @@ import vista.componentes.*;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyListener;
 
 public class VistaAuditoria extends JPanel {
+
+    private JTable tabla;
+    private DefaultTableModel modeloTabla;
+    private CampoTextoModerno txtBuscar;
 
     public VistaAuditoria() {
         setOpaque(false);
@@ -19,7 +25,7 @@ public class VistaAuditoria extends JPanel {
         JPanel tp = new JPanel();
         tp.setLayout(new BoxLayout(tp, BoxLayout.Y_AXIS));
         tp.setOpaque(false);
-        JLabel t = new JLabel("Auditoría del Sistema");
+        JLabel t = new JLabel("Auditor\u00eda del Sistema");
         t.setForeground(SenaColores.TEXTO_PRINCIPAL);
         t.setFont(new Font("Segoe UI", Font.BOLD, 24));
         JLabel s = new JLabel("Registro de todas las acciones y movimientos en el sistema");
@@ -29,14 +35,12 @@ public class VistaAuditoria extends JPanel {
         tp.add(Box.createRigidArea(new Dimension(0, 4)));
         tp.add(s);
 
-        CampoTextoModerno buscador = new CampoTextoModerno("Buscar en logs...");
-        buscador.setPreferredSize(new Dimension(220, 38));
+        txtBuscar = new CampoTextoModerno("Buscar en logs...");
+        txtBuscar.setPreferredSize(new Dimension(220, 38));
 
         JPanel acciones = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         acciones.setOpaque(false);
-        acciones.add(buscador);
-        BotonPlano btnExp = new BotonPlano("Exportar CSV", new Color(100, 116, 139), new Color(71, 85, 105));
-        acciones.add(btnExp);
+        acciones.add(txtBuscar);
 
         header.add(tp, BorderLayout.WEST);
         header.add(acciones, BorderLayout.EAST);
@@ -46,17 +50,20 @@ public class VistaAuditoria extends JPanel {
         body.setLayout(new BorderLayout());
         body.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
-        String[] cols = {"Fecha / Hora", "Usuario", "Acción", "Módulo", "Detalles", "IP"};
-        DefaultTableModel model = new DefaultTableModel(cols, 0) { 
+        String[] cols = {"ID", "Usuario", "Acci\u00f3n", "M\u00f3dulo", "Detalle", "Fecha"};
+        modeloTabla = new DefaultTableModel(cols, 0) { 
             public boolean isCellEditable(int r, int c) { return false; } 
         };
-        JTable table = new JTable(model);
+        tabla = new JTable(modeloTabla);
 
-        model.addRow(new Object[]{"2024-03-20 10:30", "admin_01", "LOGIN", "Auth", "Inicio de sesión exitoso", "192.168.1.100"});
-        model.addRow(new Object[]{"2024-03-20 10:35", "admin_01", "CREATE", "Inventario", "Se añadió Laptop HP ProBook", "192.168.1.100"});
-        model.addRow(new Object[]{"2024-03-20 11:15", "asistente_1", "UPDATE", "Préstamos", "Se aprobó préstamo #402", "192.168.1.105"});
-
-        body.add(TablaModerna.crear(table), BorderLayout.CENTER);
+        body.add(TablaModerna.crear(tabla), BorderLayout.CENTER);
         add(body, BorderLayout.CENTER);
+    }
+
+    public DefaultTableModel getModeloTabla() { return modeloTabla; }
+    public CampoTextoModerno getTxtBuscar() { return txtBuscar; }
+    
+    public void setControlador(KeyListener c) {
+        txtBuscar.addKeyListener(c);
     }
 }

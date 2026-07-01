@@ -7,7 +7,9 @@ import java.awt.event.KeyListener;
 import java.util.List;
 import javax.swing.JOptionPane;
 import javax.swing.SwingWorker;
+import javax.swing.Timer;
 import javax.swing.table.DefaultTableModel;
+import modelo.AuditLog;
 import modelo.Item;
 import vista.VistaInventario;
 
@@ -15,6 +17,7 @@ public class ControladorInventario implements ActionListener, KeyListener {
     
     private VistaInventario vista;
     private Item modelo;
+    private Timer autoRefresh;
     
     public ControladorInventario(VistaInventario vista, Item modelo) {
         this.vista = vista;
@@ -24,7 +27,7 @@ public class ControladorInventario implements ActionListener, KeyListener {
         if (this.vista.getTxtBuscar() != null) {
             this.vista.getTxtBuscar().addKeyListener(this);
         }
-
+        
         try {
             Item.inicializarTabla();
         } catch (Exception e) {
@@ -32,6 +35,8 @@ public class ControladorInventario implements ActionListener, KeyListener {
         }
         
         cargarDatosTabla("");
+        autoRefresh = new Timer(30000, e -> cargarDatosTabla(vista.getTxtBuscar().getText()));
+        autoRefresh.start();
     }
     
     public void cargarDatosTabla(String filtro) {
@@ -110,6 +115,7 @@ public class ControladorInventario implements ActionListener, KeyListener {
             modelo.setEstado("Disponible");
             
             if (modelo.insertar()) {
+                AuditLog.registrar("admin", "CREATE", "Inventario", "Item: " + nombre + " (" + codigo + ")");
                 JOptionPane.showMessageDialog(vista, "Elemento guardado con éxito.");
                 vista.getDialogo().setVisible(false);
                 vista.limpiarFormulario();
