@@ -89,8 +89,8 @@ public class ControladorInventario implements ActionListener, KeyListener {
             String cantidadStr = vista.getTxtCantidad().getText();
             String ubicacion = vista.getTxtUbicacion().getText();
             
-            if (nombre.isEmpty() || codigo.isEmpty() || categoria.isEmpty() || cantidadStr.isEmpty()) {
-                JOptionPane.showMessageDialog(vista, "Por favor complete los campos obligatorios.");
+            if (nombre.isEmpty() || codigo.isEmpty() || categoria.isEmpty() || cantidadStr.isEmpty() || ubicacion.isEmpty()) {
+                JOptionPane.showMessageDialog(vista, "Por favor complete los campos obligatorios (Nombre, Código, Categoría, Cantidad, Ubicación).");
                 return;
             }
             

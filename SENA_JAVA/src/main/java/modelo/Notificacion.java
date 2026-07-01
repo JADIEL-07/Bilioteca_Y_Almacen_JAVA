@@ -38,18 +38,24 @@ public class Notificacion {
     public void setLeida(boolean leida) { this.leida = leida; }
 
     public static void inicializarTabla() {
-        String sql = "CREATE TABLE IF NOT EXISTS notifications ("
-                   + "id SERIAL PRIMARY KEY, "
-                   + "title VARCHAR(255) NOT NULL, "
-                   + "message TEXT NOT NULL, "
-                   + "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, "
-                   + "is_read BOOLEAN DEFAULT FALSE"
-                   + ")";
         try (Connection con = ConexionBD.getInstance().getConnection();
              Statement stmt = con.createStatement()) {
-            stmt.execute(sql);
+
+            stmt.execute("CREATE TABLE IF NOT EXISTS notifications ("
+                       + "id SERIAL PRIMARY KEY, "
+                       + "title VARCHAR(255) NOT NULL, "
+                       + "message TEXT NOT NULL, "
+                       + "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, "
+                       + "is_read BOOLEAN DEFAULT FALSE"
+                       + ")");
+
+            try {
+                stmt.execute("ALTER TABLE notifications ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
+            } catch (SQLException ignored) {
+            }
+
         } catch (SQLException e) {
-            System.err.println("Error al crear tabla notifications: " + e.getMessage());
+            System.err.println("Error al inicializar tabla notifications: " + e.getMessage());
         }
     }
 

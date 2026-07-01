@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -41,26 +42,55 @@ public class Item {
     public void setEstado(String estado) { this.estado = estado; }
 
     public boolean insertar() {
-        // Para insertar, se necesita resolver category_id, location_id y status_id.
-        // Buscamos o creamos la categoría, ubicación y estado por nombre.
-        String sql = "INSERT INTO items (name, code, category_id, stock, location_id, status_id) " +
-                     "VALUES (?, ?, " +
-                     "(SELECT id FROM categories WHERE name = ? LIMIT 1), ?, " +
-                     "(SELECT id FROM locations WHERE name = ? LIMIT 1), " +
-                     "(SELECT id FROM statuses WHERE name = ? LIMIT 1))";
-        try (Connection con = ConexionBD.getInstance().getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, nombre);
-            ps.setString(2, codigo);
-            ps.setString(3, categoria);
-            ps.setInt(4, cantidad);
-            ps.setString(5, ubicacion);
-            ps.setString(6, estado != null ? estado.toUpperCase() : "AVAILABLE");
-            return ps.executeUpdate() > 0;
+        Connection con = null;
+        try {
+            con = ConexionBD.getInstance().getConnection();
+
+            int categoryId = resolverReferencia(con, "categories", categoria);
+            int locationId = resolverReferencia(con, "locations", ubicacion);
+            String estadoFinal = (estado != null && !estado.isEmpty()) ? estado : "Disponible";
+            int statusId = resolverReferencia(con, "statuses", estadoFinal);
+
+            String sql = "INSERT INTO items (name, code, category_id, stock, location_id, status_id) "
+                       + "VALUES (?, ?, ?, ?, ?, ?)";
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+                ps.setString(1, nombre);
+                ps.setString(2, codigo);
+                ps.setInt(3, categoryId);
+                ps.setInt(4, cantidad);
+                ps.setInt(5, locationId);
+                ps.setInt(6, statusId);
+                return ps.executeUpdate() > 0;
+            }
         } catch (SQLException e) {
             System.err.println("Error al insertar item: " + e.getMessage());
             return false;
+        } finally {
+            if (con != null) ConexionBD.getInstance().releaseConnection(con);
         }
+    }
+
+    private int resolverReferencia(Connection con, String tabla, String nombre) throws SQLException {
+        String sqlSelect = "SELECT id FROM " + tabla + " WHERE name = ?";
+        try (PreparedStatement ps = con.prepareStatement(sqlSelect)) {
+            ps.setString(1, nombre);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("id");
+                }
+            }
+        }
+        String sqlInsert = "INSERT INTO " + tabla + " (name) VALUES (?)";
+        try (PreparedStatement ps = con.prepareStatement(sqlInsert, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setString(1, nombre);
+            ps.executeUpdate();
+            try (ResultSet rs = ps.getGeneratedKeys()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        }
+        throw new SQLException("No se pudo obtener o crear '" + nombre + "' en " + tabla);
     }
     
     public boolean modificar() {
