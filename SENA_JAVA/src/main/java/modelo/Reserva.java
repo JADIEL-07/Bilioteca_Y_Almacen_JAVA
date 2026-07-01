@@ -35,9 +35,8 @@ public class Reserva {
     public boolean insertar() {
         String sql = "INSERT INTO reservations (user_id, item_id, reservation_date, status) " +
                      "VALUES (?, (SELECT id FROM items WHERE code = ? LIMIT 1), NOW(), ?)";
-        try {
-            Connection con = ConexionBD.getInstance().getConnection();
-            PreparedStatement ps = con.prepareStatement(sql);
+        try (Connection con = ConexionBD.getInstance().getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, documentoUsuario);
             ps.setString(2, codigoItem);
             ps.setString(3, estado != null ? estado.toUpperCase() : "PENDING");
@@ -54,10 +53,9 @@ public class Reserva {
                      "FROM reservations r " +
                      "LEFT JOIN items i ON r.item_id = i.id " +
                      "WHERE r.is_deleted = false ORDER BY r.id DESC";
-        try {
-            Connection con = ConexionBD.getInstance().getConnection();
-            PreparedStatement ps = con.prepareStatement(sql);
-            ResultSet rs = ps.executeQuery();
+        try (Connection con = ConexionBD.getInstance().getConnection();
+             PreparedStatement ps = con.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 Reserva r = new Reserva();
                 r.setId(rs.getInt("id"));
@@ -70,6 +68,34 @@ public class Reserva {
             }
         } catch (SQLException e) {
             System.err.println("Error al listar reservas: " + e.getMessage());
+        }
+        return lista;
+    }
+    
+    public List<Reserva> buscar(String texto) {
+        List<Reserva> lista = new ArrayList<>();
+        String sql = "SELECT r.id, r.user_id, r.item_id, r.reservation_date, r.status, i.code AS codigo_item " +
+                     "FROM reservations r " +
+                     "LEFT JOIN items i ON r.item_id = i.id " +
+                     "WHERE r.is_deleted = false AND (r.user_id ILIKE ? OR r.status ILIKE ?) ORDER BY r.id DESC";
+        try (Connection con = ConexionBD.getInstance().getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, "%" + texto + "%");
+            ps.setString(2, "%" + texto + "%");
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Reserva r = new Reserva();
+                    r.setId(rs.getInt("id"));
+                    r.setDocumentoUsuario(rs.getString("user_id"));
+                    r.setCodigoItem(rs.getString("codigo_item") != null ? rs.getString("codigo_item") : "N/A");
+                    java.sql.Timestamp ts = rs.getTimestamp("reservation_date");
+                    r.setFechaReserva(ts != null ? ts.toLocalDateTime().toLocalDate().toString() : "");
+                    r.setEstado(rs.getString("status"));
+                    lista.add(r);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error al buscar reservas: " + e.getMessage());
         }
         return lista;
     }

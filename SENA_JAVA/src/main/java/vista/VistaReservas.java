@@ -141,4 +141,6 @@ public class VistaReservas extends JPanel {
         btnGuardar.setActionCommand("Guardar");
         btnGuardar.addActionListener(c);
     }
+
+    public CampoTextoModerno getTxtBuscar() { return txtBuscar; }
 }

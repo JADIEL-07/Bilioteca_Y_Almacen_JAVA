@@ -57,10 +57,9 @@ public class AuditLog {
         List<AuditLog> lista = new ArrayList<>();
         String sql = "SELECT id, user_id, action, entity, entity_name, created_at " +
                      "FROM audit_logs ORDER BY created_at DESC";
-        try {
-            Connection con = ConexionBD.getInstance().getConnection();
-            PreparedStatement ps = con.prepareStatement(sql);
-            ResultSet rs = ps.executeQuery();
+        try (Connection con = ConexionBD.getInstance().getConnection();
+             PreparedStatement ps = con.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 AuditLog log = new AuditLog();
                 log.setIdAuditLog(rs.getInt("id"));
@@ -84,9 +83,8 @@ public class AuditLog {
         String sql = "SELECT id, user_id, action, entity, entity_name, created_at " +
                      "FROM audit_logs WHERE user_id ILIKE ? OR action ILIKE ? OR entity_name ILIKE ? " +
                      "ORDER BY created_at DESC";
-        try {
-            Connection con = ConexionBD.getInstance().getConnection();
-            PreparedStatement ps = con.prepareStatement(sql);
+        try (Connection con = ConexionBD.getInstance().getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
             String patron = "%" + busqueda + "%";
             ps.setString(1, patron);
             ps.setString(2, patron);

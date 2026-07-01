@@ -2,13 +2,16 @@ package controlador;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyListener;
+import java.awt.event.KeyEvent;
 import java.util.List;
 import javax.swing.JOptionPane;
+import javax.swing.SwingWorker;
 import javax.swing.table.DefaultTableModel;
 import modelo.Prestamo;
 import vista.VistaPrestamos;
 
-public class ControladorPrestamo implements ActionListener {
+public class ControladorPrestamo implements ActionListener, KeyListener {
     
     private VistaPrestamos vista;
     private Prestamo modelo;
@@ -18,6 +21,9 @@ public class ControladorPrestamo implements ActionListener {
         this.modelo = modelo;
         
         this.vista.setControlador(this);
+        if (this.vista.getTxtBuscar() != null) {
+            this.vista.getTxtBuscar().addKeyListener(this);
+        }
         
         try {
             Prestamo.inicializarTabla();
@@ -25,38 +31,45 @@ public class ControladorPrestamo implements ActionListener {
             System.err.println("No se pudo inicializar tabla prestamos: " + e.getMessage());
         }
         
-        cargarDatosTabla();
+        cargarDatosTabla("");
     }
     
-    public void cargarDatosTabla() {
+    public void cargarDatosTabla(String filtro) {
         DefaultTableModel tablaModelo = vista.getModeloTabla();
         tablaModelo.setRowCount(0);
-        
-        List<Prestamo> lista = null;
-        try {
-            lista = modelo.listar();
-        } catch (Exception e) {
-            System.err.println("Error al listar prestamos desde BD: " + e.getMessage());
-        }
-        
-        if (lista != null && !lista.isEmpty()) {
-            for (Prestamo p : lista) {
-                tablaModelo.addRow(new Object[]{
-                    p.getId(),
-                    p.getDocumentoUsuario(),
-                    p.getCodigoItem(),
-                    p.getFechaPrestamo(),
-                    p.getFechaDevolucion(),
-                    p.getEstado()
-                });
+
+        new SwingWorker<java.util.List<Prestamo>, Void>() {
+            @Override
+            protected java.util.List<Prestamo> doInBackground() {
+                try {
+                    if (filtro == null || filtro.trim().isEmpty()) {
+                        return modelo.listar();
+                    } else {
+                        return modelo.buscar(filtro.trim());
+                    }
+                } catch (Exception e) {
+                    System.err.println("Error al cargar datos: " + e.getMessage());
+                    return new java.util.ArrayList<>();
+                }
             }
-        } else {
-            tablaModelo.addRow(new Object[]{1, "1098765432", "INV-2024-001", "2024-06-20", "2024-06-23", "Activo"});
-            tablaModelo.addRow(new Object[]{2, "52987654", "INV-2024-078", "2024-06-18", "2024-06-21", "Devuelto"});
-            tablaModelo.addRow(new Object[]{3, "1023456789", "BIB-2024-045", "2024-06-22", "2024-06-25", "Activo"});
-            tablaModelo.addRow(new Object[]{4, "80123456", "INV-2024-133", "2024-06-15", "2024-06-18", "Vencido"});
-            tablaModelo.addRow(new Object[]{5, "1098765432", "INV-2024-150", "2024-06-24", "2024-06-27", "Activo"});
-        }
+
+            @Override
+            protected void done() {
+                try {
+                    java.util.List<Prestamo> lista = get();
+                    tablaModelo.setRowCount(0);
+                    if (lista != null && !lista.isEmpty()) {
+                        for (Prestamo item : lista) {
+                            tablaModelo.addRow(obtenerFila(item));
+                        }
+                    } else {
+                        // No data found, table remains empty
+                    }
+                } catch (Exception e) {
+                    System.err.println("Error al actualizar tabla: " + e.getMessage());
+                }
+            }
+        }.execute();
     }
 
     @Override
@@ -84,10 +97,35 @@ public class ControladorPrestamo implements ActionListener {
                 JOptionPane.showMessageDialog(vista, "Préstamo registrado con éxito.");
                 vista.getDialogo().setVisible(false);
                 vista.limpiarFormulario();
-                cargarDatosTabla();
+                cargarDatosTabla("");
             } else {
                 JOptionPane.showMessageDialog(vista, "Error al registrar préstamo. Verifique el formato de fecha (YYYY-MM-DD).");
             }
         }
+    }
+
+    @Override
+    public void keyTyped(KeyEvent e) {}
+
+    @Override
+    public void keyPressed(KeyEvent e) {
+        if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+            String texto = vista.getTxtBuscar().getText();
+            cargarDatosTabla(texto);
+        }
+    }
+
+    @Override
+    public void keyReleased(KeyEvent e) {}
+
+    private Object[] obtenerFila(Prestamo item) {
+        return new Object[]{
+                    item.getId(),
+                    item.getDocumentoUsuario(),
+                    item.getCodigoItem(),
+                    item.getFechaPrestamo(),
+                    item.getFechaDevolucion(),
+                    item.getEstado()
+                };
     }
 }

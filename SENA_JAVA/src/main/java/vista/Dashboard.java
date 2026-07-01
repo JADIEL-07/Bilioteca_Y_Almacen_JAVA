@@ -100,7 +100,11 @@ public class Dashboard extends JFrame {
         ControladorUsuario ctrlUsuario = new ControladorUsuario(vistaUsuarios, modeloUsuario);
         contenedorCentral.add(vistaUsuarios,                       "Usuarios");
         contenedorCentral.add(new VistaAuditoria(),                "Auditoría");
-        contenedorCentral.add(new VistaNotificaciones(),           "Notificaciones");
+        // --- Integración del Módulo de Notificaciones (MVC) ---
+        VistaNotificaciones vistaNotificaciones = new VistaNotificaciones();
+        modelo.Notificacion modeloNotificacion = new modelo.Notificacion();
+        controlador.ControladorNotificaciones ctrlNotificaciones = new controlador.ControladorNotificaciones(vistaNotificaciones, modeloNotificacion);
+        contenedorCentral.add(vistaNotificaciones,           "Notificaciones");
 
         mainArea.add(contenedorCentral, BorderLayout.CENTER);
         fondoAnimado.add(mainArea, BorderLayout.CENTER);

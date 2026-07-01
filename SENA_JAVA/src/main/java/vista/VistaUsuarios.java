@@ -155,4 +155,6 @@ public class VistaUsuarios extends JPanel {
         btnGuardar.setActionCommand("Guardar");
         btnGuardar.addActionListener(c);
     }
+
+    public CampoTextoModerno getTxtBuscar() { return txtBuscar; }
 }

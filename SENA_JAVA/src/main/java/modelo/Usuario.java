@@ -46,9 +46,8 @@ public class Usuario {
 
     public boolean insertar() {
         String sql = "INSERT INTO users (id, name, email, phone, password, is_active, role_id) VALUES (?, ?, ?, ?, ?, ?, ?)";
-        try {
-            Connection con = ConexionBD.getInstance().getConnection();
-            PreparedStatement ps = con.prepareStatement(sql);
+        try (Connection con = ConexionBD.getInstance().getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, documento);
             ps.setString(2, nombre);
             ps.setString(3, email);
@@ -77,10 +76,9 @@ public class Usuario {
     public List<Usuario> listar() {
         List<Usuario> lista = new ArrayList<>();
         String sql = "SELECT * FROM users WHERE is_deleted = false ORDER BY created_at DESC";
-        try {
-            Connection con = ConexionBD.getInstance().getConnection();
-            PreparedStatement ps = con.prepareStatement(sql);
-            ResultSet rs = ps.executeQuery();
+        try (Connection con = ConexionBD.getInstance().getConnection();
+             PreparedStatement ps = con.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 Usuario u = new Usuario();
                 u.setId(rs.getString("id"));
@@ -107,6 +105,45 @@ public class Usuario {
             }
         } catch (SQLException e) {
             System.err.println("Error al listar usuarios: " + e.getMessage());
+        }
+        return lista;
+    }
+    
+    public List<Usuario> buscar(String texto) {
+        List<Usuario> lista = new ArrayList<>();
+        String sql = "SELECT * FROM users WHERE is_deleted = false AND (name ILIKE ? OR email ILIKE ?) ORDER BY id DESC";
+        try (Connection con = ConexionBD.getInstance().getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, "%" + texto + "%");
+            ps.setString(2, "%" + texto + "%");
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Usuario u = new Usuario();
+                    u.setId(rs.getString("id"));
+                    u.setNombre(rs.getString("name"));
+                    u.setDocumento(rs.getString("id"));
+                    u.setEmail(rs.getString("email"));
+                    u.setCelular(rs.getString("phone"));
+                    u.setEstado(rs.getBoolean("is_active") ? "Activo" : "Inactivo");
+                    u.setPassword(rs.getString("password"));
+                    
+                    int roleId = rs.getInt("role_id");
+                    String t = "USUARIO";
+                    switch (roleId) {
+                        case 1: t = "ADMIN"; break;
+                        case 2: t = "BIBLIOTECARIO"; break;
+                        case 3: t = "ALMACENISTA"; break;
+                        case 4: t = "SOPORTE_TECNICO"; break;
+                        case 5: t = "EMPRESA"; break;
+                        case 6: t = "APRENDIZ"; break;
+                        case 7: t = "USUARIO"; break;
+                    }
+                    u.setTipo(t);
+                    lista.add(u);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error al buscar usuarios: " + e.getMessage());
         }
         return lista;
     }

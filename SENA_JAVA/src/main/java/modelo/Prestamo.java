@@ -38,9 +38,8 @@ public class Prestamo {
 
     public boolean insertar() {
         String sql = "INSERT INTO loans (user_id, loan_date, due_date, status) VALUES (?, NOW(), ?, ?)";
-        try {
-            Connection con = ConexionBD.getInstance().getConnection();
-            PreparedStatement ps = con.prepareStatement(sql);
+        try (Connection con = ConexionBD.getInstance().getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, documentoUsuario);
             ps.setDate(2, java.sql.Date.valueOf(fechaDevolucion));
             ps.setString(3, estado != null ? estado.toUpperCase() : "ACTIVE");
@@ -58,10 +57,9 @@ public class Prestamo {
                      "LEFT JOIN loan_details ld ON l.id = ld.loan_id " +
                      "LEFT JOIN items i ON ld.item_id = i.id " +
                      "ORDER BY l.id DESC";
-        try {
-            Connection con = ConexionBD.getInstance().getConnection();
-            PreparedStatement ps = con.prepareStatement(sql);
-            ResultSet rs = ps.executeQuery();
+        try (Connection con = ConexionBD.getInstance().getConnection();
+             PreparedStatement ps = con.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 Prestamo p = new Prestamo();
                 p.setId(rs.getInt("id"));
@@ -76,6 +74,37 @@ public class Prestamo {
             }
         } catch (SQLException e) {
             System.err.println("Error al listar prestamos: " + e.getMessage());
+        }
+        return lista;
+    }
+    
+    public List<Prestamo> buscar(String texto) {
+        List<Prestamo> lista = new ArrayList<>();
+        String sql = "SELECT l.id, l.user_id, l.loan_date, l.due_date, l.status, li.item_id, i.code AS codigo_item " +
+                     "FROM loans l " +
+                     "LEFT JOIN loan_items li ON l.id = li.loan_id " +
+                     "LEFT JOIN items i ON li.item_id = i.id " +
+                     "WHERE l.status != 'DELETED' AND (l.user_id ILIKE ? OR l.status ILIKE ?) ORDER BY l.id DESC";
+        try (Connection con = ConexionBD.getInstance().getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, "%" + texto + "%");
+            ps.setString(2, "%" + texto + "%");
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Prestamo p = new Prestamo();
+                    p.setId(rs.getInt("id"));
+                    p.setDocumentoUsuario(rs.getString("user_id"));
+                    p.setCodigoItem(rs.getString("codigo_item") != null ? rs.getString("codigo_item") : "N/A");
+                    java.sql.Date loanDate = rs.getDate("loan_date");
+                    p.setFechaPrestamo(loanDate != null ? loanDate.toString() : "");
+                    java.sql.Date dueDate = rs.getDate("due_date");
+                    p.setFechaDevolucion(dueDate != null ? dueDate.toString() : "");
+                    p.setEstado(rs.getString("status"));
+                    lista.add(p);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error al buscar prestamos: " + e.getMessage());
         }
         return lista;
     }

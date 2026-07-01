@@ -2,13 +2,16 @@ package controlador;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyListener;
+import java.awt.event.KeyEvent;
 import java.util.List;
 import javax.swing.JOptionPane;
+import javax.swing.SwingWorker;
 import javax.swing.table.DefaultTableModel;
 import modelo.Item;
 import vista.VistaInventario;
 
-public class ControladorInventario implements ActionListener {
+public class ControladorInventario implements ActionListener, KeyListener {
     
     private VistaInventario vista;
     private Item modelo;
@@ -18,6 +21,9 @@ public class ControladorInventario implements ActionListener {
         this.modelo = modelo;
         
         this.vista.setControlador(this);
+        if (this.vista.getTxtBuscar() != null) {
+            this.vista.getTxtBuscar().addKeyListener(this);
+        }
         
         try {
             Item.inicializarTabla();
@@ -25,43 +31,45 @@ public class ControladorInventario implements ActionListener {
             System.err.println("No se pudo inicializar tabla items: " + e.getMessage());
         }
         
-        cargarDatosTabla();
+        cargarDatosTabla("");
     }
     
-    public void cargarDatosTabla() {
+    public void cargarDatosTabla(String filtro) {
         DefaultTableModel tablaModelo = vista.getModeloTabla();
         tablaModelo.setRowCount(0);
-        
-        List<Item> lista = null;
-        try {
-            lista = modelo.listar();
-        } catch (Exception e) {
-            System.err.println("Error al listar items desde BD: " + e.getMessage());
-        }
-        
-        if (lista != null && !lista.isEmpty()) {
-            for (Item item : lista) {
-                tablaModelo.addRow(new Object[]{
-                    item.getId(),
-                    item.getNombre(),
-                    item.getCodigo(),
-                    item.getCategoria(),
-                    item.getCantidad(),
-                    item.getUbicacion(),
-                    item.getEstado()
-                });
+
+        new SwingWorker<java.util.List<Item>, Void>() {
+            @Override
+            protected java.util.List<Item> doInBackground() {
+                try {
+                    if (filtro == null || filtro.trim().isEmpty()) {
+                        return modelo.listar();
+                    } else {
+                        return modelo.buscar(filtro.trim());
+                    }
+                } catch (Exception e) {
+                    System.err.println("Error al cargar datos: " + e.getMessage());
+                    return new java.util.ArrayList<>();
+                }
             }
-        } else {
-            // Datos de demostración cuando la BD está vacía o no conecta
-            tablaModelo.addRow(new Object[]{1, "Laptop HP ProBook 450", "INV-2024-001", "Equipos", 15, "Sala 201", "Disponible"});
-            tablaModelo.addRow(new Object[]{2, "Proyector Epson S41+", "INV-2024-002", "Equipos", 8, "Almacén A", "Disponible"});
-            tablaModelo.addRow(new Object[]{3, "Java: Cómo Programar - Deitel", "BIB-2024-045", "Libros", 25, "Biblioteca", "Disponible"});
-            tablaModelo.addRow(new Object[]{4, "Multímetro Fluke 117", "INV-2024-078", "Herramientas", 12, "Taller 3", "En préstamo"});
-            tablaModelo.addRow(new Object[]{5, "Cable HDMI 3m", "INV-2024-120", "Insumos", 50, "Almacén B", "Disponible"});
-            tablaModelo.addRow(new Object[]{6, "Kit Arduino Mega 2560", "INV-2024-133", "Equipos", 20, "Lab. Electrónica", "Disponible"});
-            tablaModelo.addRow(new Object[]{7, "Mouse inalámbrico Logitech", "INV-2024-150", "Insumos", 35, "Almacén A", "Disponible"});
-            tablaModelo.addRow(new Object[]{8, "Monitor LG 24'' Full HD", "INV-2024-160", "Equipos", 10, "Sala 305", "En mantenimiento"});
-        }
+
+            @Override
+            protected void done() {
+                try {
+                    java.util.List<Item> lista = get();
+                    tablaModelo.setRowCount(0);
+                    if (lista != null && !lista.isEmpty()) {
+                        for (Item item : lista) {
+                            tablaModelo.addRow(obtenerFila(item));
+                        }
+                    } else {
+                        // No data found, table remains empty
+                    }
+                } catch (Exception e) {
+                    System.err.println("Error al actualizar tabla: " + e.getMessage());
+                }
+            }
+        }.execute();
     }
 
     @Override
@@ -99,10 +107,36 @@ public class ControladorInventario implements ActionListener {
                 JOptionPane.showMessageDialog(vista, "Elemento guardado con éxito.");
                 vista.getDialogo().setVisible(false);
                 vista.limpiarFormulario();
-                cargarDatosTabla();
+                cargarDatosTabla("");
             } else {
                 JOptionPane.showMessageDialog(vista, "Error al guardar el elemento.");
             }
         }
+    }
+
+    @Override
+    public void keyTyped(KeyEvent e) {}
+
+    @Override
+    public void keyPressed(KeyEvent e) {
+        if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+            String texto = vista.getTxtBuscar().getText();
+            cargarDatosTabla(texto);
+        }
+    }
+
+    @Override
+    public void keyReleased(KeyEvent e) {}
+
+    private Object[] obtenerFila(Item item) {
+        return new Object[]{
+                    item.getId(),
+                    item.getNombre(),
+                    item.getCodigo(),
+                    item.getCategoria(),
+                    item.getCantidad(),
+                    item.getUbicacion(),
+                    item.getEstado()
+                };
     }
 }

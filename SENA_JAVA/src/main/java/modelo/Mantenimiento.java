@@ -35,9 +35,8 @@ public class Mantenimiento {
     public boolean insertar() {
         String sql = "INSERT INTO maintenance (item_id, failure_description, status, report_date) " +
                      "VALUES ((SELECT id FROM items WHERE code = ? LIMIT 1), ?, ?, NOW())";
-        try {
-            Connection con = ConexionBD.getInstance().getConnection();
-            PreparedStatement ps = con.prepareStatement(sql);
+        try (Connection con = ConexionBD.getInstance().getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, codigoItem);
             ps.setString(2, descripcion);
             ps.setString(3, estado != null ? estado.toUpperCase() : "PENDING");
@@ -54,10 +53,9 @@ public class Mantenimiento {
                      "FROM maintenance m " +
                      "LEFT JOIN items i ON m.item_id = i.id " +
                      "ORDER BY m.id DESC";
-        try {
-            Connection con = ConexionBD.getInstance().getConnection();
-            PreparedStatement ps = con.prepareStatement(sql);
-            ResultSet rs = ps.executeQuery();
+        try (Connection con = ConexionBD.getInstance().getConnection();
+             PreparedStatement ps = con.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 Mantenimiento m = new Mantenimiento();
                 m.setId(rs.getInt("id"));
@@ -74,7 +72,34 @@ public class Mantenimiento {
         return lista;
     }
     
+    public List<Mantenimiento> buscar(String texto) {
+        List<Mantenimiento> lista = new ArrayList<>();
+        String sql = "SELECT m.id, m.failure_description, m.status, i.code AS codigo_item " +
+                     "FROM maintenance m " +
+                     "LEFT JOIN items i ON m.item_id = i.id " +
+                     "WHERE m.is_deleted = false AND (m.failure_description ILIKE ? OR m.status ILIKE ?) ORDER BY m.id DESC";
+        try (Connection con = ConexionBD.getInstance().getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, "%" + texto + "%");
+            ps.setString(2, "%" + texto + "%");
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Mantenimiento m = new Mantenimiento();
+                    m.setId(rs.getInt("id"));
+                    m.setCodigoItem(rs.getString("codigo_item") != null ? rs.getString("codigo_item") : "N/A");
+                    m.setDescripcion(rs.getString("failure_description"));
+                    m.setEstado(rs.getString("status"));
+                    lista.add(m);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error al buscar mantenimientos: " + e.getMessage());
+        }
+        return lista;
+    }
+    
     public static void inicializarTabla() {
         System.out.println("Tabla 'maintenance' remota ya verificada.");
     }
 }
+

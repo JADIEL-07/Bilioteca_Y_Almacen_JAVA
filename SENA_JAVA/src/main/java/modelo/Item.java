@@ -48,9 +48,8 @@ public class Item {
                      "(SELECT id FROM categories WHERE name = ? LIMIT 1), ?, " +
                      "(SELECT id FROM locations WHERE name = ? LIMIT 1), " +
                      "(SELECT id FROM statuses WHERE name = ? LIMIT 1))";
-        try {
-            Connection con = ConexionBD.getInstance().getConnection();
-            PreparedStatement ps = con.prepareStatement(sql);
+        try (Connection con = ConexionBD.getInstance().getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, nombre);
             ps.setString(2, codigo);
             ps.setString(3, categoria);
@@ -66,9 +65,8 @@ public class Item {
     
     public boolean modificar() {
         String sql = "UPDATE items SET name=?, code=?, stock=? WHERE id=?";
-        try {
-            Connection con = ConexionBD.getInstance().getConnection();
-            PreparedStatement ps = con.prepareStatement(sql);
+        try (Connection con = ConexionBD.getInstance().getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, nombre);
             ps.setString(2, codigo);
             ps.setInt(3, cantidad);
@@ -82,9 +80,8 @@ public class Item {
     
     public boolean eliminar() {
         String sql = "UPDATE items SET is_deleted = true WHERE id=?";
-        try {
-            Connection con = ConexionBD.getInstance().getConnection();
-            PreparedStatement ps = con.prepareStatement(sql);
+        try (Connection con = ConexionBD.getInstance().getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setInt(1, id);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -101,10 +98,9 @@ public class Item {
                      "LEFT JOIN locations l ON i.location_id = l.id " +
                      "LEFT JOIN statuses s ON i.status_id = s.id " +
                      "WHERE i.is_deleted = false ORDER BY i.id DESC";
-        try {
-            Connection con = ConexionBD.getInstance().getConnection();
-            PreparedStatement ps = con.prepareStatement(sql);
-            ResultSet rs = ps.executeQuery();
+        try (Connection con = ConexionBD.getInstance().getConnection();
+             PreparedStatement ps = con.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 Item item = new Item();
                 item.setId(rs.getInt("id"));
@@ -130,9 +126,8 @@ public class Item {
                      "LEFT JOIN locations l ON i.location_id = l.id " +
                      "LEFT JOIN statuses s ON i.status_id = s.id " +
                      "WHERE i.is_deleted = false AND (i.name ILIKE ? OR i.code ILIKE ?)";
-        try {
-            Connection con = ConexionBD.getInstance().getConnection();
-            PreparedStatement ps = con.prepareStatement(sql);
+        try (Connection con = ConexionBD.getInstance().getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, "%" + busqueda + "%");
             ps.setString(2, "%" + busqueda + "%");
             ResultSet rs = ps.executeQuery();

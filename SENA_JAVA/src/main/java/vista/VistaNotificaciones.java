@@ -9,6 +9,14 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
 public class VistaNotificaciones extends JPanel {
+    
+    private JPanel listaContenedor;
+    private JPanel btnFiltroTodas;
+    private JPanel btnFiltroNoLeidas;
+    private JPanel btnMarcarLeidas;
+    private JPanel btnLimpiarTodo;
+    private JLabel lblBadgeNum;
+    private JPanel pnlBadge;
 
     public VistaNotificaciones() {
         setOpaque(false);
@@ -52,7 +60,7 @@ public class VistaNotificaciones extends JPanel {
         lblTitle.setForeground(Color.WHITE);
 
         // Badge verde "2 sin leer"
-        JPanel badge = new JPanel() {
+        pnlBadge = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
@@ -62,26 +70,32 @@ public class VistaNotificaciones extends JPanel {
                 g2.dispose();
             }
         };
-        badge.setOpaque(false);
-        badge.setPreferredSize(new Dimension(70, 22));
-        badge.setLayout(new BorderLayout());
-        JLabel lblBadge = new JLabel("2 sin leer", SwingConstants.CENTER);
-        lblBadge.setFont(new Font("Segoe UI", Font.BOLD, 11));
-        lblBadge.setForeground(new Color(15, 23, 42)); // Texto oscuro
-        badge.add(lblBadge, BorderLayout.CENTER);
+        pnlBadge.setOpaque(false);
+        pnlBadge.setPreferredSize(new Dimension(70, 22));
+        pnlBadge.setLayout(new BorderLayout());
+        lblBadgeNum = new JLabel("0 sin leer", SwingConstants.CENTER);
+        lblBadgeNum.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        lblBadgeNum.setForeground(new Color(15, 23, 42)); // Texto oscuro
+        pnlBadge.add(lblBadgeNum, BorderLayout.CENTER);
+        pnlBadge.setVisible(false);
 
         pnlIzquierda.add(lblIcon);
         pnlIzquierda.add(lblTitle);
-        pnlIzquierda.add(badge);
+        pnlIzquierda.add(pnlBadge);
 
         // Derecha: Botones de filtro
         JPanel pnlDerecha = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 0));
         pnlDerecha.setOpaque(false);
 
-        pnlDerecha.add(crearBotonFiltro("Todas", false, SenaColores.VERDE_SENA));
-        pnlDerecha.add(crearBotonFiltro("No leÃ­das", true, SenaColores.VERDE_SENA));
-        pnlDerecha.add(crearBotonFiltro("Marcar leÃ­das", false, new Color(148, 163, 184))); // Gris
-        pnlDerecha.add(crearBotonFiltro("Limpiar todo", false, new Color(239, 68, 68))); // Rojo
+        btnFiltroTodas = crearBotonFiltro("Todas", true, SenaColores.VERDE_SENA);
+        btnFiltroNoLeidas = crearBotonFiltro("No leídas", false, SenaColores.VERDE_SENA);
+        btnMarcarLeidas = crearBotonFiltro("Marcar leídas", false, new Color(148, 163, 184));
+        btnLimpiarTodo = crearBotonFiltro("Limpiar todo", false, new Color(239, 68, 68));
+
+        pnlDerecha.add(btnFiltroTodas);
+        pnlDerecha.add(btnFiltroNoLeidas);
+        pnlDerecha.add(btnMarcarLeidas);
+        pnlDerecha.add(btnLimpiarTodo);
 
         headerPanel.add(pnlIzquierda, BorderLayout.WEST);
         headerPanel.add(pnlDerecha, BorderLayout.EAST);
@@ -103,21 +117,56 @@ public class VistaNotificaciones extends JPanel {
     }
 
     private JPanel crearListaNotificaciones() {
-        JPanel lista = new JPanel();
-        lista.setLayout(new BoxLayout(lista, BoxLayout.Y_AXIS));
-        lista.setOpaque(false);
-
-        lista.add(crearTarjetaNotificacion("Nuevo inicio de sesiÃ³n", "Se detectÃ³ un inicio de sesiÃ³n en tu cuenta desde 127.0.0.1.", "24 de junio de 2026 a las 7:17 p. m.", true));
-        lista.add(Box.createRigidArea(new Dimension(0, 15)));
-        lista.add(crearTarjetaNotificacion("Nuevo inicio de sesiÃ³n", "Se detectÃ³ un inicio de sesiÃ³n en tu cuenta desde 127.0.0.1.", "24 de junio de 2026 a las 7:16 p. m.", true));
+        listaContenedor = new JPanel();
+        listaContenedor.setLayout(new BoxLayout(listaContenedor, BoxLayout.Y_AXIS));
+        listaContenedor.setOpaque(false);
 
         // Se usa un panel contenedor que empuja todo hacia arriba
         JPanel wrapper = new JPanel(new BorderLayout());
         wrapper.setOpaque(false);
-        wrapper.add(lista, BorderLayout.NORTH);
+        wrapper.add(listaContenedor, BorderLayout.NORTH);
         
-        return wrapper;
+        // Agregar scroll
+        JScrollPane scroll = new JScrollPane(wrapper);
+        scroll.setOpaque(false);
+        scroll.getViewport().setOpaque(false);
+        scroll.setBorder(null);
+        scroll.getVerticalScrollBar().setUnitIncrement(16);
+        
+        JPanel outer = new JPanel(new BorderLayout());
+        outer.setOpaque(false);
+        outer.add(scroll, BorderLayout.CENTER);
+        return outer;
     }
+    
+    public void limpiarNotificaciones() {
+        listaContenedor.removeAll();
+        listaContenedor.revalidate();
+        listaContenedor.repaint();
+    }
+    
+    public void agregarTarjetaNotificacion(int id, String titulo, String mensaje, String fecha, boolean noLeido) {
+        listaContenedor.add(crearTarjetaNotificacion(titulo, mensaje, fecha, noLeido));
+        listaContenedor.add(Box.createRigidArea(new Dimension(0, 15)));
+    }
+    
+    public void actualizarBadge(int cantidad) {
+        if (cantidad > 0) {
+            pnlBadge.setVisible(true);
+            lblBadgeNum.setText(cantidad + " sin leer");
+        } else {
+            pnlBadge.setVisible(false);
+        }
+        pnlBadge.revalidate();
+        pnlBadge.repaint();
+    }
+    
+    // Getters para el controlador
+    public JPanel getBtnFiltroTodas() { return btnFiltroTodas; }
+    public JPanel getBtnFiltroNoLeidas() { return btnFiltroNoLeidas; }
+    public JPanel getBtnMarcarLeidas() { return btnMarcarLeidas; }
+    public JPanel getBtnLimpiarTodo() { return btnLimpiarTodo; }
+
 
     private JPanel crearTarjetaNotificacion(String titulo, String mensaje, String fecha, boolean noLeido) {
         JPanel tarjeta = new JPanel(new BorderLayout()) {
