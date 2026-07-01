@@ -4,9 +4,10 @@ import modelo.Usuario;
 import vista.Dashboard;
 import vista.Login;
 import javax.swing.JOptionPane;
+import javax.swing.SwingWorker;
+import java.awt.Cursor;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.List;
 import org.mindrot.jbcrypt.BCrypt;
 
 public class ControladorLogin implements ActionListener {
@@ -15,8 +16,6 @@ public class ControladorLogin implements ActionListener {
     
     public ControladorLogin(Login vistaLogin) {
         this.vistaLogin = vistaLogin;
-        
-        // Asignar listeners a los botones
         this.vistaLogin.getBtnLogin().addActionListener(this);
         this.vistaLogin.getBtnReg().addActionListener(this);
     }
@@ -28,79 +27,112 @@ public class ControladorLogin implements ActionListener {
     @Override
     public void actionPerformed(ActionEvent e) {
         if (e.getSource() == vistaLogin.getBtnLogin()) {
-            String documento = vistaLogin.getTxtLogDoc().getRealText();
-            String password = new String(vistaLogin.getTxtLogPass().getPassword());
-            
-            if (documento.isEmpty() || password.isEmpty()) {
-                JOptionPane.showMessageDialog(vistaLogin, "Por favor, ingresa tus credenciales.", "Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-            
-            // Validacion temporal (Demo o Base de Datos)
-            if (documento.equals("admin") || documento.equals("12345")) {
-                // Login exitoso demo
-                Dashboard d = new Dashboard();
-                d.setVisible(true);
-                vistaLogin.dispose();
-            } else {
-                // Verificar en base de datos
-                Usuario modeloUsuario = new Usuario();
-                List<Usuario> usuarios = modeloUsuario.listar();
-                boolean auth = false;
-                
-                for (Usuario u : usuarios) {
-                    if (u.getDocumento() != null && u.getDocumento().equals(documento)) {
-                        String storedHash = u.getPassword();
-                        if (storedHash != null) {
-                            if (storedHash.startsWith("$2b$")) {
-                                storedHash = "$2a$" + storedHash.substring(4);
-                            }
-                            if (BCrypt.checkpw(password, storedHash)) {
-                                auth = true;
-                                break;
-                            }
-                        }
-                    }
-                }
-                
-                if (auth) {
-                    Dashboard d = new Dashboard();
-                    d.setVisible(true);
-                    vistaLogin.dispose();
-                } else {
-                    JOptionPane.showMessageDialog(vistaLogin, "Credenciales incorrectas.", "Error", JOptionPane.ERROR_MESSAGE);
-                }
-            }
+            manejarLogin();
         }
         
         if (e.getSource() == vistaLogin.getBtnReg()) {
-            String nombre = vistaLogin.getTxtRegName().getRealText();
-            String tipo = vistaLogin.getCmbRegTipo().getSelectedItem().toString();
-            String documento = vistaLogin.getTxtRegNum().getRealText();
-            String email = vistaLogin.getTxtRegEmail().getRealText();
-            String telefono = vistaLogin.getTxtRegPhone().getRealText();
-            String password = new String(vistaLogin.getTxtRegPass().getPassword());
-            
-            if (nombre.isEmpty() || documento.isEmpty() || password.isEmpty()) {
-                JOptionPane.showMessageDialog(vistaLogin, "Por favor, llena todos los campos obligatorios.", "Advertencia", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-            
-            Usuario nuevo = new Usuario();
-            nuevo.setNombre(nombre);
-            nuevo.setTipo(tipo);
-            nuevo.setDocumento(documento);
-            nuevo.setEmail(email);
-            nuevo.setCelular(telefono);
-            nuevo.setPassword(BCrypt.hashpw(password, BCrypt.gensalt()));
-            nuevo.setEstado("Activo");
-            
-            if (nuevo.insertar()) {
-                JOptionPane.showMessageDialog(vistaLogin, "Cuenta creada exitosamente. Ya puedes iniciar sesión.");
-                vistaLogin.mostrarLogin();
-            } else {
-                JOptionPane.showMessageDialog(vistaLogin, "Error al crear la cuenta. Intenta de nuevo.", "Error", JOptionPane.ERROR_MESSAGE);
-            }
+            manejarRegistro();
         }
+    }
+
+    private void manejarLogin() {
+        String documento = vistaLogin.getTxtLogDoc().getRealText().trim();
+        String password = new String(vistaLogin.getTxtLogPass().getPassword());
+
+        if (documento.isEmpty() || password.isEmpty()) {
+            JOptionPane.showMessageDialog(vistaLogin, "Por favor, ingresa tus credenciales.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        // Deshabilitar el botón y mostrar cursor de espera para que el usuario sepa que está procesando
+        vistaLogin.getBtnLogin().setEnabled(false);
+        vistaLogin.getCursor();
+        vistaLogin.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+
+        // SwingWorker: la consulta corre en segundo plano, la UI no se congela
+        new SwingWorker<Boolean, Void>() {
+            @Override
+            protected Boolean doInBackground() {
+                // Consulta directa: solo busca el hash del usuario específico (no trae todos)
+                String storedHash = Usuario.obtenerHashPassword(documento);
+                if (storedHash == null) return false;
+
+                // Compatibilidad: $2b$ -> $2a$ (BCrypt versión de Node.js vs Java)
+                if (storedHash.startsWith("$2b$")) {
+                    storedHash = "$2a$" + storedHash.substring(4);
+                }
+                return BCrypt.checkpw(password, storedHash);
+            }
+
+            @Override
+            protected void done() {
+                vistaLogin.getBtnLogin().setEnabled(true);
+                vistaLogin.setCursor(Cursor.getDefaultCursor());
+                try {
+                    boolean auth = get();
+                    if (auth) {
+                        Dashboard d = new Dashboard();
+                        d.setVisible(true);
+                        vistaLogin.dispose();
+                    } else {
+                        JOptionPane.showMessageDialog(vistaLogin, "Credenciales incorrectas.", "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(vistaLogin, "Error de conexión. Intenta de nuevo.", "Error", JOptionPane.ERROR_MESSAGE);
+                    System.err.println("Error en login: " + ex.getMessage());
+                }
+            }
+        }.execute();
+    }
+
+    private void manejarRegistro() {
+        String nombre = vistaLogin.getTxtRegName().getRealText().trim();
+        String tipo = vistaLogin.getCmbRegTipo().getSelectedItem().toString();
+        String documento = vistaLogin.getTxtRegNum().getRealText().trim();
+        String email = vistaLogin.getTxtRegEmail().getRealText().trim();
+        String telefono = vistaLogin.getTxtRegPhone().getRealText().trim();
+        String password = new String(vistaLogin.getTxtRegPass().getPassword());
+
+        if (nombre.isEmpty() || documento.isEmpty() || password.isEmpty()) {
+            JOptionPane.showMessageDialog(vistaLogin, "Por favor, llena todos los campos obligatorios.", "Advertencia", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        vistaLogin.getBtnReg().setEnabled(false);
+        vistaLogin.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+
+        // Hash y guardado en segundo plano
+        new SwingWorker<Boolean, Void>() {
+            @Override
+            protected Boolean doInBackground() {
+                Usuario nuevo = new Usuario();
+                nuevo.setNombre(nombre);
+                nuevo.setTipo(tipo);
+                nuevo.setDocumento(documento);
+                nuevo.setEmail(email);
+                nuevo.setCelular(telefono);
+                nuevo.setPassword(BCrypt.hashpw(password, BCrypt.gensalt()));
+                nuevo.setEstado("Activo");
+                return nuevo.insertar();
+            }
+
+            @Override
+            protected void done() {
+                vistaLogin.getBtnReg().setEnabled(true);
+                vistaLogin.setCursor(Cursor.getDefaultCursor());
+                try {
+                    boolean ok = get();
+                    if (ok) {
+                        JOptionPane.showMessageDialog(vistaLogin, "Cuenta creada exitosamente. Ya puedes iniciar sesión.");
+                        vistaLogin.mostrarLogin();
+                    } else {
+                        JOptionPane.showMessageDialog(vistaLogin, "Error al crear la cuenta. Intenta de nuevo.", "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(vistaLogin, "Error de conexión al registrar.", "Error", JOptionPane.ERROR_MESSAGE);
+                    System.err.println("Error en registro: " + ex.getMessage());
+                }
+            }
+        }.execute();
     }
 }

@@ -148,6 +148,27 @@ public class Usuario {
         return lista;
     }
     
+    /**
+     * Autentica directamente al usuario con una sola consulta WHERE id = documento.
+     * Evita cargar todos los usuarios en memoria.
+     * @return el hash BCrypt almacenado, o null si no existe el usuario.
+     */
+    public static String obtenerHashPassword(String documento) {
+        String sql = "SELECT password FROM users WHERE id = ? AND is_active = true AND is_deleted = false";
+        try {
+            Connection con = ConexionBD.getInstance().getConnection();
+            PreparedStatement ps = con.prepareStatement(sql);
+            ps.setString(1, documento);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return rs.getString("password");
+            }
+        } catch (SQLException e) {
+            System.err.println("Error al buscar hash de usuario: " + e.getMessage());
+        }
+        return null;
+    }
+
     public static void inicializarTabla() {
         System.out.println("Tabla 'users' remota ya verificada.");
     }

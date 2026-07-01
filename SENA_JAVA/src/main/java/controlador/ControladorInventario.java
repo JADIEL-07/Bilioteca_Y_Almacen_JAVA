@@ -2,8 +2,8 @@ package controlador;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.KeyListener;
 import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.util.List;
 import javax.swing.JOptionPane;
 import javax.swing.SwingWorker;
@@ -24,7 +24,7 @@ public class ControladorInventario implements ActionListener, KeyListener {
         if (this.vista.getTxtBuscar() != null) {
             this.vista.getTxtBuscar().addKeyListener(this);
         }
-        
+
         try {
             Item.inicializarTabla();
         } catch (Exception e) {
@@ -38,9 +38,9 @@ public class ControladorInventario implements ActionListener, KeyListener {
         DefaultTableModel tablaModelo = vista.getModeloTabla();
         tablaModelo.setRowCount(0);
 
-        new SwingWorker<java.util.List<Item>, Void>() {
+        new SwingWorker<List<Item>, Void>() {
             @Override
-            protected java.util.List<Item> doInBackground() {
+            protected List<Item> doInBackground() {
                 try {
                     if (filtro == null || filtro.trim().isEmpty()) {
                         return modelo.listar();
@@ -56,14 +56,20 @@ public class ControladorInventario implements ActionListener, KeyListener {
             @Override
             protected void done() {
                 try {
-                    java.util.List<Item> lista = get();
+                    List<Item> lista = get();
                     tablaModelo.setRowCount(0);
                     if (lista != null && !lista.isEmpty()) {
                         for (Item item : lista) {
-                            tablaModelo.addRow(obtenerFila(item));
+                            tablaModelo.addRow(new Object[]{
+                                item.getId(),
+                                item.getNombre(),
+                                item.getCodigo(),
+                                item.getCategoria(),
+                                item.getCantidad(),
+                                item.getUbicacion(),
+                                item.getEstado()
+                            });
                         }
-                    } else {
-                        // No data found, table remains empty
                     }
                 } catch (Exception e) {
                     System.err.println("Error al actualizar tabla: " + e.getMessage());
@@ -114,29 +120,11 @@ public class ControladorInventario implements ActionListener, KeyListener {
         }
     }
 
-    @Override
-    public void keyTyped(KeyEvent e) {}
-
-    @Override
-    public void keyPressed(KeyEvent e) {
+    @Override public void keyTyped(KeyEvent e) {}
+    @Override public void keyReleased(KeyEvent e) {}
+    @Override public void keyPressed(KeyEvent e) {
         if (e.getKeyCode() == KeyEvent.VK_ENTER) {
-            String texto = vista.getTxtBuscar().getText();
-            cargarDatosTabla(texto);
+            cargarDatosTabla(vista.getTxtBuscar().getText());
         }
-    }
-
-    @Override
-    public void keyReleased(KeyEvent e) {}
-
-    private Object[] obtenerFila(Item item) {
-        return new Object[]{
-                    item.getId(),
-                    item.getNombre(),
-                    item.getCodigo(),
-                    item.getCategoria(),
-                    item.getCantidad(),
-                    item.getUbicacion(),
-                    item.getEstado()
-                };
     }
 }
