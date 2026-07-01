@@ -7,6 +7,7 @@ import javax.swing.JOptionPane;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.List;
+import org.mindrot.jbcrypt.BCrypt;
 
 public class ControladorLogin implements ActionListener {
     
@@ -49,10 +50,15 @@ public class ControladorLogin implements ActionListener {
                 
                 for (Usuario u : usuarios) {
                     if (u.getDocumento() != null && u.getDocumento().equals(documento)) {
-                        // En un sistema real compararíamos hash, aquí directo
-                        if (u.getPassword() != null && u.getPassword().equals(password)) {
-                            auth = true;
-                            break;
+                        String storedHash = u.getPassword();
+                        if (storedHash != null) {
+                            if (storedHash.startsWith("$2b$")) {
+                                storedHash = "$2a$" + storedHash.substring(4);
+                            }
+                            if (BCrypt.checkpw(password, storedHash)) {
+                                auth = true;
+                                break;
+                            }
                         }
                     }
                 }
@@ -86,7 +92,7 @@ public class ControladorLogin implements ActionListener {
             nuevo.setDocumento(documento);
             nuevo.setEmail(email);
             nuevo.setCelular(telefono);
-            nuevo.setPassword(password);
+            nuevo.setPassword(BCrypt.hashpw(password, BCrypt.gensalt()));
             nuevo.setEstado("Activo");
             
             if (nuevo.insertar()) {

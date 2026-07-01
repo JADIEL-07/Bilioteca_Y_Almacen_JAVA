@@ -37,15 +37,13 @@ public class Prestamo {
     public void setEstado(String estado) { this.estado = estado; }
 
     public boolean insertar() {
-        String sql = "INSERT INTO prestamos (documento_usuario, codigo_item, fecha_prestamo, fecha_devolucion, estado) VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO loans (user_id, loan_date, due_date, status) VALUES (?, NOW(), ?, ?)";
         try {
             Connection con = ConexionBD.getInstance().getConnection();
             PreparedStatement ps = con.prepareStatement(sql);
             ps.setString(1, documentoUsuario);
-            ps.setString(2, codigoItem);
-            ps.setDate(3, java.sql.Date.valueOf(fechaPrestamo));
-            ps.setDate(4, java.sql.Date.valueOf(fechaDevolucion));
-            ps.setString(5, estado);
+            ps.setDate(2, java.sql.Date.valueOf(fechaDevolucion));
+            ps.setString(3, estado != null ? estado.toUpperCase() : "ACTIVE");
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             System.err.println("Error al insertar prestamo: " + e.getMessage());
@@ -55,7 +53,11 @@ public class Prestamo {
     
     public List<Prestamo> listar() {
         List<Prestamo> lista = new ArrayList<>();
-        String sql = "SELECT * FROM prestamos ORDER BY id DESC";
+        String sql = "SELECT l.id, l.user_id, i.code AS codigo_item, l.loan_date, l.due_date, l.status " +
+                     "FROM loans l " +
+                     "LEFT JOIN loan_details ld ON l.id = ld.loan_id " +
+                     "LEFT JOIN items i ON ld.item_id = i.id " +
+                     "ORDER BY l.id DESC";
         try {
             Connection con = ConexionBD.getInstance().getConnection();
             PreparedStatement ps = con.prepareStatement(sql);
@@ -63,11 +65,13 @@ public class Prestamo {
             while (rs.next()) {
                 Prestamo p = new Prestamo();
                 p.setId(rs.getInt("id"));
-                p.setDocumentoUsuario(rs.getString("documento_usuario"));
-                p.setCodigoItem(rs.getString("codigo_item"));
-                p.setFechaPrestamo(rs.getDate("fecha_prestamo").toString());
-                p.setFechaDevolucion(rs.getDate("fecha_devolucion").toString());
-                p.setEstado(rs.getString("estado"));
+                p.setDocumentoUsuario(rs.getString("user_id"));
+                p.setCodigoItem(rs.getString("codigo_item") != null ? rs.getString("codigo_item") : "N/A");
+                java.sql.Timestamp loanTs = rs.getTimestamp("loan_date");
+                p.setFechaPrestamo(loanTs != null ? loanTs.toLocalDateTime().toLocalDate().toString() : "");
+                java.sql.Date dueDate = rs.getDate("due_date");
+                p.setFechaDevolucion(dueDate != null ? dueDate.toString() : "");
+                p.setEstado(rs.getString("status"));
                 lista.add(p);
             }
         } catch (SQLException e) {
@@ -77,20 +81,6 @@ public class Prestamo {
     }
     
     public static void inicializarTabla() {
-        String sql = "CREATE TABLE IF NOT EXISTS prestamos (" +
-                     "id SERIAL PRIMARY KEY, " +
-                     "documento_usuario VARCHAR(50) NOT NULL, " +
-                     "codigo_item VARCHAR(50) NOT NULL, " +
-                     "fecha_prestamo DATE NOT NULL, " +
-                     "fecha_devolucion DATE NOT NULL, " +
-                     "estado VARCHAR(50) DEFAULT 'Activo')";
-        try {
-            Connection con = ConexionBD.getInstance().getConnection();
-            PreparedStatement ps = con.prepareStatement(sql);
-            ps.execute();
-            System.out.println("Tabla 'prestamos' verificada/creada.");
-        } catch (SQLException e) {
-            System.err.println("Error al crear tabla prestamos: " + e.getMessage());
-        }
+        System.out.println("Tabla 'loans' remota ya verificada.");
     }
 }

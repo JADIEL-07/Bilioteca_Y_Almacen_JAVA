@@ -6,9 +6,9 @@ import java.sql.SQLException;
 
 public class ConexionBD {
     
-    private static final String URL = "jdbc:postgresql://localhost:5432/biblioteca_db";
-    private static final String USUARIO = "postgres";
-    private static final String CLAVE = "12345";
+    private static final String URL = "jdbc:postgresql://194.163.142.34:5437/biblioteca_db";
+    private static final String USUARIO = "Jadiel_Zz";
+    private static final String CLAVE = "12872Jadiel#";
     
     public static Connection conexion;
     

@@ -9,7 +9,7 @@ import java.util.List;
 
 public class Usuario {
     
-    private int id;
+    private String id;
     private String nombre;
     private String documento;
     private String tipo;
@@ -20,8 +20,8 @@ public class Usuario {
     
     public Usuario() {}
 
-    public int getId() { return id; }
-    public void setId(int id) { this.id = id; }
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
 
     public String getNombre() { return nombre; }
     public void setNombre(String nombre) { this.nombre = nombre; }
@@ -45,17 +45,28 @@ public class Usuario {
     public void setPassword(String password) { this.password = password; }
 
     public boolean insertar() {
-        String sql = "INSERT INTO usuarios (nombre, documento, tipo, email, celular, estado, password) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO users (id, name, email, phone, password, is_active, role_id) VALUES (?, ?, ?, ?, ?, ?, ?)";
         try {
             Connection con = ConexionBD.getInstance().getConnection();
             PreparedStatement ps = con.prepareStatement(sql);
-            ps.setString(1, nombre);
-            ps.setString(2, documento);
-            ps.setString(3, tipo);
-            ps.setString(4, email);
-            ps.setString(5, celular);
-            ps.setString(6, estado);
-            ps.setString(7, password);
+            ps.setString(1, documento);
+            ps.setString(2, nombre);
+            ps.setString(3, email);
+            ps.setString(4, celular);
+            ps.setString(5, password);
+            ps.setBoolean(6, "Activo".equalsIgnoreCase(estado));
+            
+            int roleId = 7;
+            if (tipo != null) {
+                String t = tipo.toUpperCase();
+                if (t.contains("ADMIN")) roleId = 1;
+                else if (t.contains("BIBLIOTECARIO")) roleId = 2;
+                else if (t.contains("ALMACENISTA")) roleId = 3;
+                else if (t.contains("SOPORTE") || t.contains("TECNICO")) roleId = 4;
+                else if (t.contains("EMPRESA")) roleId = 5;
+                else if (t.contains("APRENDIZ")) roleId = 6;
+            }
+            ps.setInt(7, roleId);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             System.err.println("Error al insertar usuario: " + e.getMessage());
@@ -65,24 +76,33 @@ public class Usuario {
     
     public List<Usuario> listar() {
         List<Usuario> lista = new ArrayList<>();
-        String sql = "SELECT * FROM usuarios ORDER BY id DESC";
+        String sql = "SELECT * FROM users WHERE is_deleted = false ORDER BY created_at DESC";
         try {
             Connection con = ConexionBD.getInstance().getConnection();
             PreparedStatement ps = con.prepareStatement(sql);
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {
                 Usuario u = new Usuario();
-                u.setId(rs.getInt("id"));
-                u.setNombre(rs.getString("nombre"));
-                u.setDocumento(rs.getString("documento"));
-                u.setTipo(rs.getString("tipo"));
+                u.setId(rs.getString("id"));
+                u.setNombre(rs.getString("name"));
+                u.setDocumento(rs.getString("id"));
                 u.setEmail(rs.getString("email"));
-                u.setCelular(rs.getString("celular"));
-                u.setEstado(rs.getString("estado"));
-                // Solo leer password si existe (puede ser null en la BD)
-                try {
-                    u.setPassword(rs.getString("password"));
-                } catch (Exception ex) {}
+                u.setCelular(rs.getString("phone"));
+                u.setEstado(rs.getBoolean("is_active") ? "Activo" : "Inactivo");
+                u.setPassword(rs.getString("password"));
+                
+                int roleId = rs.getInt("role_id");
+                String t = "USUARIO";
+                switch (roleId) {
+                    case 1: t = "ADMIN"; break;
+                    case 2: t = "BIBLIOTECARIO"; break;
+                    case 3: t = "ALMACENISTA"; break;
+                    case 4: t = "SOPORTE_TECNICO"; break;
+                    case 5: t = "EMPRESA"; break;
+                    case 6: t = "APRENDIZ"; break;
+                    case 7: t = "USUARIO"; break;
+                }
+                u.setTipo(t);
                 lista.add(u);
             }
         } catch (SQLException e) {
@@ -92,31 +112,6 @@ public class Usuario {
     }
     
     public static void inicializarTabla() {
-        String sql = "CREATE TABLE IF NOT EXISTS usuarios (" +
-                     "id SERIAL PRIMARY KEY, " +
-                     "nombre VARCHAR(150) NOT NULL, " +
-                     "documento VARCHAR(50) UNIQUE NOT NULL, " +
-                     "tipo VARCHAR(50) NOT NULL, " +
-                     "email VARCHAR(100), " +
-                     "celular VARCHAR(20), " +
-                     "estado VARCHAR(50) DEFAULT 'Activo', " +
-                     "password VARCHAR(255))";
-        try {
-            Connection con = ConexionBD.getInstance().getConnection();
-            PreparedStatement ps = con.prepareStatement(sql);
-            ps.execute();
-            System.out.println("Tabla 'usuarios' verificada/creada.");
-            
-            // Add column if it doesn't exist (for existing tables)
-            try {
-                PreparedStatement psAlt = con.prepareStatement("ALTER TABLE usuarios ADD COLUMN password VARCHAR(255)");
-                psAlt.execute();
-            } catch (SQLException ignore) {
-                // Column probably already exists
-            }
-            
-        } catch (SQLException e) {
-            System.err.println("Error al crear tabla usuarios: " + e.getMessage());
-        }
+        System.out.println("Tabla 'users' remota ya verificada.");
     }
 }

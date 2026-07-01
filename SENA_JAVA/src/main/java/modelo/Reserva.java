@@ -33,14 +33,14 @@ public class Reserva {
     public void setEstado(String estado) { this.estado = estado; }
 
     public boolean insertar() {
-        String sql = "INSERT INTO reservas (documento_usuario, codigo_item, fecha_reserva, estado) VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO reservations (user_id, item_id, reservation_date, status) " +
+                     "VALUES (?, (SELECT id FROM items WHERE code = ? LIMIT 1), NOW(), ?)";
         try {
             Connection con = ConexionBD.getInstance().getConnection();
             PreparedStatement ps = con.prepareStatement(sql);
             ps.setString(1, documentoUsuario);
             ps.setString(2, codigoItem);
-            ps.setDate(3, java.sql.Date.valueOf(fechaReserva));
-            ps.setString(4, estado);
+            ps.setString(3, estado != null ? estado.toUpperCase() : "PENDING");
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             System.err.println("Error al insertar reserva: " + e.getMessage());
@@ -50,7 +50,10 @@ public class Reserva {
     
     public List<Reserva> listar() {
         List<Reserva> lista = new ArrayList<>();
-        String sql = "SELECT * FROM reservas ORDER BY id DESC";
+        String sql = "SELECT r.id, r.user_id, i.code AS codigo_item, r.reservation_date, r.status " +
+                     "FROM reservations r " +
+                     "LEFT JOIN items i ON r.item_id = i.id " +
+                     "WHERE r.is_deleted = false ORDER BY r.id DESC";
         try {
             Connection con = ConexionBD.getInstance().getConnection();
             PreparedStatement ps = con.prepareStatement(sql);
@@ -58,10 +61,11 @@ public class Reserva {
             while (rs.next()) {
                 Reserva r = new Reserva();
                 r.setId(rs.getInt("id"));
-                r.setDocumentoUsuario(rs.getString("documento_usuario"));
-                r.setCodigoItem(rs.getString("codigo_item"));
-                r.setFechaReserva(rs.getDate("fecha_reserva").toString());
-                r.setEstado(rs.getString("estado"));
+                r.setDocumentoUsuario(rs.getString("user_id"));
+                r.setCodigoItem(rs.getString("codigo_item") != null ? rs.getString("codigo_item") : "N/A");
+                java.sql.Timestamp ts = rs.getTimestamp("reservation_date");
+                r.setFechaReserva(ts != null ? ts.toLocalDateTime().toLocalDate().toString() : "");
+                r.setEstado(rs.getString("status"));
                 lista.add(r);
             }
         } catch (SQLException e) {
@@ -71,19 +75,6 @@ public class Reserva {
     }
     
     public static void inicializarTabla() {
-        String sql = "CREATE TABLE IF NOT EXISTS reservas (" +
-                     "id SERIAL PRIMARY KEY, " +
-                     "documento_usuario VARCHAR(50) NOT NULL, " +
-                     "codigo_item VARCHAR(50) NOT NULL, " +
-                     "fecha_reserva DATE NOT NULL, " +
-                     "estado VARCHAR(50) DEFAULT 'Pendiente')";
-        try {
-            Connection con = ConexionBD.getInstance().getConnection();
-            PreparedStatement ps = con.prepareStatement(sql);
-            ps.execute();
-            System.out.println("Tabla 'reservas' verificada/creada.");
-        } catch (SQLException e) {
-            System.err.println("Error al crear tabla reservas: " + e.getMessage());
-        }
+        System.out.println("Tabla 'reservations' remota ya verificada.");
     }
 }

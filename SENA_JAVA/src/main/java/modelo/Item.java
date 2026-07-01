@@ -41,7 +41,13 @@ public class Item {
     public void setEstado(String estado) { this.estado = estado; }
 
     public boolean insertar() {
-        String sql = "INSERT INTO items (nombre, codigo, categoria, cantidad, ubicacion, estado) VALUES (?, ?, ?, ?, ?, ?)";
+        // Para insertar, se necesita resolver category_id, location_id y status_id.
+        // Buscamos o creamos la categoría, ubicación y estado por nombre.
+        String sql = "INSERT INTO items (name, code, category_id, stock, location_id, status_id) " +
+                     "VALUES (?, ?, " +
+                     "(SELECT id FROM categories WHERE name = ? LIMIT 1), ?, " +
+                     "(SELECT id FROM locations WHERE name = ? LIMIT 1), " +
+                     "(SELECT id FROM statuses WHERE name = ? LIMIT 1))";
         try {
             Connection con = ConexionBD.getInstance().getConnection();
             PreparedStatement ps = con.prepareStatement(sql);
@@ -50,7 +56,7 @@ public class Item {
             ps.setString(3, categoria);
             ps.setInt(4, cantidad);
             ps.setString(5, ubicacion);
-            ps.setString(6, estado);
+            ps.setString(6, estado != null ? estado.toUpperCase() : "AVAILABLE");
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             System.err.println("Error al insertar item: " + e.getMessage());
@@ -59,17 +65,14 @@ public class Item {
     }
     
     public boolean modificar() {
-        String sql = "UPDATE items SET nombre=?, codigo=?, categoria=?, cantidad=?, ubicacion=?, estado=? WHERE id=?";
+        String sql = "UPDATE items SET name=?, code=?, stock=? WHERE id=?";
         try {
             Connection con = ConexionBD.getInstance().getConnection();
             PreparedStatement ps = con.prepareStatement(sql);
             ps.setString(1, nombre);
             ps.setString(2, codigo);
-            ps.setString(3, categoria);
-            ps.setInt(4, cantidad);
-            ps.setString(5, ubicacion);
-            ps.setString(6, estado);
-            ps.setInt(7, id);
+            ps.setInt(3, cantidad);
+            ps.setInt(4, id);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             System.err.println("Error al modificar item: " + e.getMessage());
@@ -78,7 +81,7 @@ public class Item {
     }
     
     public boolean eliminar() {
-        String sql = "DELETE FROM items WHERE id=?";
+        String sql = "UPDATE items SET is_deleted = true WHERE id=?";
         try {
             Connection con = ConexionBD.getInstance().getConnection();
             PreparedStatement ps = con.prepareStatement(sql);
@@ -92,7 +95,12 @@ public class Item {
     
     public List<Item> listar() {
         List<Item> lista = new ArrayList<>();
-        String sql = "SELECT * FROM items ORDER BY id DESC";
+        String sql = "SELECT i.id, i.name, i.code, c.name AS categoria, i.stock, l.name AS ubicacion, s.name AS estado " +
+                     "FROM items i " +
+                     "LEFT JOIN categories c ON i.category_id = c.id " +
+                     "LEFT JOIN locations l ON i.location_id = l.id " +
+                     "LEFT JOIN statuses s ON i.status_id = s.id " +
+                     "WHERE i.is_deleted = false ORDER BY i.id DESC";
         try {
             Connection con = ConexionBD.getInstance().getConnection();
             PreparedStatement ps = con.prepareStatement(sql);
@@ -100,10 +108,10 @@ public class Item {
             while (rs.next()) {
                 Item item = new Item();
                 item.setId(rs.getInt("id"));
-                item.setNombre(rs.getString("nombre"));
-                item.setCodigo(rs.getString("codigo"));
+                item.setNombre(rs.getString("name"));
+                item.setCodigo(rs.getString("code"));
                 item.setCategoria(rs.getString("categoria"));
-                item.setCantidad(rs.getInt("cantidad"));
+                item.setCantidad(rs.getInt("stock"));
                 item.setUbicacion(rs.getString("ubicacion"));
                 item.setEstado(rs.getString("estado"));
                 lista.add(item);
@@ -116,7 +124,12 @@ public class Item {
     
     public List<Item> buscar(String busqueda) {
         List<Item> lista = new ArrayList<>();
-        String sql = "SELECT * FROM items WHERE nombre ILIKE ? OR codigo ILIKE ?";
+        String sql = "SELECT i.id, i.name, i.code, c.name AS categoria, i.stock, l.name AS ubicacion, s.name AS estado " +
+                     "FROM items i " +
+                     "LEFT JOIN categories c ON i.category_id = c.id " +
+                     "LEFT JOIN locations l ON i.location_id = l.id " +
+                     "LEFT JOIN statuses s ON i.status_id = s.id " +
+                     "WHERE i.is_deleted = false AND (i.name ILIKE ? OR i.code ILIKE ?)";
         try {
             Connection con = ConexionBD.getInstance().getConnection();
             PreparedStatement ps = con.prepareStatement(sql);
@@ -126,10 +139,10 @@ public class Item {
             while (rs.next()) {
                 Item item = new Item();
                 item.setId(rs.getInt("id"));
-                item.setNombre(rs.getString("nombre"));
-                item.setCodigo(rs.getString("codigo"));
+                item.setNombre(rs.getString("name"));
+                item.setCodigo(rs.getString("code"));
                 item.setCategoria(rs.getString("categoria"));
-                item.setCantidad(rs.getInt("cantidad"));
+                item.setCantidad(rs.getInt("stock"));
                 item.setUbicacion(rs.getString("ubicacion"));
                 item.setEstado(rs.getString("estado"));
                 lista.add(item);
@@ -141,21 +154,6 @@ public class Item {
     }
     
     public static void inicializarTabla() {
-        String sql = "CREATE TABLE IF NOT EXISTS items (" +
-                     "id SERIAL PRIMARY KEY, " +
-                     "nombre VARCHAR(100) NOT NULL, " +
-                     "codigo VARCHAR(50) UNIQUE NOT NULL, " +
-                     "categoria VARCHAR(50) NOT NULL, " +
-                     "cantidad INT DEFAULT 0, " +
-                     "ubicacion VARCHAR(100), " +
-                     "estado VARCHAR(50) DEFAULT 'Disponible')";
-        try {
-            Connection con = ConexionBD.getInstance().getConnection();
-            PreparedStatement ps = con.prepareStatement(sql);
-            ps.execute();
-            System.out.println("Tabla 'items' verificada/creada.");
-        } catch (SQLException e) {
-            System.err.println("Error al crear tabla items: " + e.getMessage());
-        }
+        System.out.println("Tabla 'items' remota ya verificada.");
     }
 }
