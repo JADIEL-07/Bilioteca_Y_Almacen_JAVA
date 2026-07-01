@@ -8,7 +8,6 @@ import controlador.ControladorInventario;
 import controlador.ControladorMantenimiento;
 import controlador.ControladorPrestamo;
 import controlador.ControladorReserva;
-import controlador.ControladorTicket;
 import controlador.ControladorUsuario;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -18,7 +17,6 @@ import modelo.Item;
 import modelo.Mantenimiento;
 import modelo.Prestamo;
 import modelo.Reserva;
-import modelo.Ticket;
 import modelo.Usuario;
 
 public class Dashboard extends JFrame {
@@ -31,7 +29,7 @@ public class Dashboard extends JFrame {
     private PanelParticulasAnimadas fondoAnimado;
     private JPanel menuPanel;
     private final String[] links = {"Inicio", "Inventario", "Préstamos", "Reservas",
-        "Mantenimiento", "Salidas", "Reportes", "Usuarios", "Solicitudes", "Configuración", "Auditoría"};
+        "Mantenimiento", "Usuarios", "Auditoría"};
     private String seccionActiva = "Inicio";
 
     // --- Sidebar Toggle ---
@@ -96,11 +94,6 @@ public class Dashboard extends JFrame {
         Mantenimiento modeloMantenimiento = new Mantenimiento();
         ControladorMantenimiento ctrlMantenimiento = new ControladorMantenimiento(vistaMantenimiento, modeloMantenimiento);
         contenedorCentral.add(vistaMantenimiento,                  "Mantenimiento");
-        // --- Integración del Módulo de Tickets (MVC) ---
-        VistaTickets vistaTickets = new VistaTickets();
-        Ticket modeloTicket = new Ticket();
-        ControladorTicket ctrlTicket = new ControladorTicket(vistaTickets, modeloTicket);
-        contenedorCentral.add(vistaTickets,                  "Solicitudes");
         // --- Integración del Módulo de Usuarios (MVC) ---
         VistaUsuarios vistaUsuarios = new VistaUsuarios();
         Usuario modeloUsuario = new Usuario();
@@ -108,9 +101,6 @@ public class Dashboard extends JFrame {
         contenedorCentral.add(vistaUsuarios,                       "Usuarios");
         contenedorCentral.add(new VistaAuditoria(),                "Auditoría");
         contenedorCentral.add(new VistaNotificaciones(),           "Notificaciones");
-        contenedorCentral.add(crearPanelEnConstruccion("Salidas"),        "Salidas");
-        contenedorCentral.add(crearPanelEnConstruccion("Reportes"),       "Reportes");
-        contenedorCentral.add(crearPanelEnConstruccion("Configuración"),  "Configuración");
 
         mainArea.add(contenedorCentral, BorderLayout.CENTER);
         fondoAnimado.add(mainArea, BorderLayout.CENTER);
@@ -353,20 +343,8 @@ public class Dashboard extends JFrame {
                     case "Mantenimiento":
                         g2.drawLine(2, 14, 7, 9); g2.drawOval(7, 2, 7, 7); g2.drawLine(9, 9, 14, 14);
                         break;
-                    case "Salidas":
-                        g2.drawLine(8, 2, 8, 12); g2.drawLine(4, 8, 8, 12); g2.drawLine(12, 8, 8, 12); g2.drawRect(1, 12, 14, 4);
-                        break;
-                    case "Reportes":
-                        g2.drawLine(4, 14, 4, 10); g2.drawLine(8, 14, 8, 6); g2.drawLine(12, 14, 12, 2);
-                        break;
                     case "Usuarios":
                         g2.drawOval(5, 1, 6, 6); g2.drawArc(1, 10, 14, 8, 0, 180);
-                        break;
-                    case "Solicitudes":
-                        g2.drawOval(3, 2, 10, 10); g2.drawLine(8, 12, 6, 16); g2.drawLine(8, 12, 10, 16);
-                        break;
-                    case "Configuración":
-                        g2.drawOval(5, 5, 6, 6); g2.drawOval(3, 3, 10, 10);
                         break;
                     default: // Auditoría
                         g2.drawRect(2, 2, 12, 13); g2.drawLine(5, 6, 11, 6); g2.drawLine(5, 9, 11, 9); g2.drawLine(5, 12, 8, 12);
