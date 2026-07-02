@@ -36,12 +36,14 @@ public class Reserva {
         Connection con = null;
         try {
             con = ConexionBD.getInstance().getConnection();
-            String sql = "INSERT INTO reservations (user_id, item_id, reservation_date, status) " +
-                         "VALUES (?, (SELECT id FROM items WHERE code = ? LIMIT 1), NOW(), ?)";
+            String token = java.util.UUID.randomUUID().toString();
+            String sql = "INSERT INTO reservations (token, user_id, item_id, reservation_date, status) " +
+                         "VALUES (?, ?, (SELECT id FROM items WHERE code = ? LIMIT 1), NOW(), ?)";
             try (PreparedStatement ps = con.prepareStatement(sql)) {
-                ps.setString(1, documentoUsuario);
-                ps.setString(2, codigoItem);
-                ps.setString(3, estado != null ? estado.toUpperCase() : "PENDING");
+                ps.setString(1, token);
+                ps.setString(2, documentoUsuario);
+                ps.setString(3, codigoItem);
+                ps.setString(4, estado != null ? estado.toUpperCase() : "PENDING");
                 return ps.executeUpdate() > 0;
             }
         } catch (SQLException e) {
@@ -57,7 +59,7 @@ public class Reserva {
         String sql = "SELECT r.id, r.user_id, i.code AS codigo_item, r.reservation_date, r.status " +
                      "FROM reservations r " +
                      "LEFT JOIN items i ON r.item_id = i.id " +
-                     "WHERE r.is_deleted = false ORDER BY r.id DESC";
+                     "WHERE (r.is_deleted = false OR r.is_deleted IS NULL) ORDER BY r.id DESC";
         Connection con = null;
         try {
             con = ConexionBD.getInstance().getConnection();
@@ -87,7 +89,7 @@ public class Reserva {
         String sql = "SELECT r.id, r.user_id, i.code AS codigo_item, r.reservation_date, r.status " +
                      "FROM reservations r " +
                      "LEFT JOIN items i ON r.item_id = i.id " +
-                     "WHERE r.is_deleted = false AND (r.user_id ILIKE ? OR r.status ILIKE ?) ORDER BY r.id DESC";
+                     "WHERE (r.is_deleted = false OR r.is_deleted IS NULL) AND (r.user_id ILIKE ? OR r.status ILIKE ?) ORDER BY r.id DESC";
         Connection con = null;
         try {
             con = ConexionBD.getInstance().getConnection();

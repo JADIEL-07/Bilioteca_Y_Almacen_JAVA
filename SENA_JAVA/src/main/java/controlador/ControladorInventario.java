@@ -71,11 +71,13 @@ public class ControladorInventario implements ActionListener, KeyListener {
                                 item.getCodigo(),
                                 item.getCategoria(),
                                 item.getCantidad(),
-                                item.getUbicacion(),
+                                item.getUbicacion() != null ? item.getUbicacion() : "",
                                 item.getEstado()
                             });
                         }
                     }
+                    int total = lista != null ? lista.size() : 0;
+                    vista.getLblContador().setText(total + " elemento" + (total != 1 ? "s" : ""));
                 } catch (Exception e) {
                     System.err.println("Error al actualizar tabla: " + e.getMessage());
                 }
@@ -88,17 +90,18 @@ public class ControladorInventario implements ActionListener, KeyListener {
         String accion = e.getActionCommand();
         
         if (accion.equals("Guardar")) {
-            String nombre = vista.getTxtNombre().getText();
-            String codigo = vista.getTxtCodigo().getText();
-            String categoria = vista.getTxtCategoria().getText();
-            String cantidadStr = vista.getTxtCantidad().getText();
-            String ubicacion = vista.getTxtUbicacion().getText();
-            
-            if (nombre.isEmpty() || codigo.isEmpty() || categoria.isEmpty() || cantidadStr.isEmpty() || ubicacion.isEmpty()) {
-                JOptionPane.showMessageDialog(vista, "Por favor complete los campos obligatorios (Nombre, Código, Categoría, Cantidad, Ubicación).");
+            String nombre      = vista.getTxtNombre().getText().trim();
+            String codigo      = vista.getTxtCodigo().getText().trim();
+            String categoria   = (String) vista.getCbCategoria().getSelectedItem();
+            String cantidadStr = vista.getTxtCantidad().getText().trim();
+            String ubicacion   = (String) vista.getCbUbicacion().getSelectedItem();
+            String estadoSel   = (String) vista.getCbEstado().getSelectedItem();
+
+            if (nombre.isEmpty() || codigo.isEmpty() || cantidadStr.isEmpty() || ubicacion == null) {
+                JOptionPane.showMessageDialog(vista, "Por favor complete todos los campos obligatorios.");
                 return;
             }
-            
+
             int cantidad;
             try {
                 cantidad = Integer.parseInt(cantidadStr);
@@ -106,14 +109,14 @@ public class ControladorInventario implements ActionListener, KeyListener {
                 JOptionPane.showMessageDialog(vista, "La cantidad debe ser un número válido.");
                 return;
             }
-            
+
             modelo.setNombre(nombre);
             modelo.setCodigo(codigo);
             modelo.setCategoria(categoria);
             modelo.setCantidad(cantidad);
             modelo.setUbicacion(ubicacion);
-            modelo.setEstado("Disponible");
-            
+            modelo.setEstado(estadoSel != null ? estadoSel : "Disponible");
+
             if (modelo.insertar()) {
                 AuditLog.registrar("admin", "CREATE", "Inventario", "Item: " + nombre + " (" + codigo + ")");
                 JOptionPane.showMessageDialog(vista, "Elemento guardado con éxito.");

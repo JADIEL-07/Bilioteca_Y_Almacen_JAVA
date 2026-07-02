@@ -71,22 +71,24 @@ public class Item {
     }
 
     private int resolverReferencia(Connection con, String tabla, String nombre) throws SQLException {
-        String sqlSelect = "SELECT id FROM " + tabla + " WHERE name = ?";
-        try (PreparedStatement ps = con.prepareStatement(sqlSelect)) {
-            ps.setString(1, nombre);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt("id");
-                }
-            }
-        }
-        String sqlInsert = "INSERT INTO " + tabla + " (name) VALUES (?)";
+        // Try INSERT with ON CONFLICT DO NOTHING (atomically insert or no-op)
+        String sqlInsert = "INSERT INTO " + tabla + " (name) VALUES (?) ON CONFLICT (name) DO NOTHING";
         try (PreparedStatement ps = con.prepareStatement(sqlInsert, Statement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, nombre);
             ps.executeUpdate();
             try (ResultSet rs = ps.getGeneratedKeys()) {
                 if (rs.next()) {
                     return rs.getInt(1);
+                }
+            }
+        }
+        // Fallback: existing row — SELECT it
+        String sqlSelect = "SELECT id FROM " + tabla + " WHERE name = ?";
+        try (PreparedStatement ps = con.prepareStatement(sqlSelect)) {
+            ps.setString(1, nombre);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("id");
                 }
             }
         }
@@ -137,6 +139,42 @@ public class Item {
         }
     }
     
+    public static Item debugModel;
+
+    public List<Item> listarDebug() {
+        List<Item> lista = new ArrayList<>();
+        String sql = "SELECT i.id, i.name, i.code, i.category_id, i.stock, i.location_id, i.status_id, i.is_deleted, " +
+                     "c.name AS categoria, l.name AS ubicacion, s.name AS estado " +
+                     "FROM items i " +
+                     "LEFT JOIN categories c ON i.category_id = c.id " +
+                     "LEFT JOIN locations l ON i.location_id = l.id " +
+                     "LEFT JOIN statuses s ON i.status_id = s.id " +
+                     "ORDER BY i.id DESC";
+        Connection con = null;
+        try {
+            con = ConexionBD.getInstance().getConnection();
+            try (PreparedStatement ps = con.prepareStatement(sql);
+                 ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Item item = new Item();
+                    item.setId(rs.getInt("id"));
+                    item.setNombre(rs.getString("name"));
+                    item.setCodigo(rs.getString("code"));
+                    item.setCategoria(rs.getString("categoria"));
+                    item.setCantidad(rs.getInt("stock"));
+                    item.setUbicacion(rs.getString("ubicacion"));
+                    item.setEstado(rs.getString("estado"));
+                    lista.add(item);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error debug listar: " + e.getMessage());
+        } finally {
+            if (con != null) ConexionBD.getInstance().releaseConnection(con);
+        }
+        return lista;
+    }
+
     public List<Item> listar() {
         List<Item> lista = new ArrayList<>();
         String sql = "SELECT i.id, i.name, i.code, c.name AS categoria, i.stock, l.name AS ubicacion, s.name AS estado " +
@@ -144,7 +182,7 @@ public class Item {
                      "LEFT JOIN categories c ON i.category_id = c.id " +
                      "LEFT JOIN locations l ON i.location_id = l.id " +
                      "LEFT JOIN statuses s ON i.status_id = s.id " +
-                     "WHERE i.is_deleted = false ORDER BY i.id DESC";
+                     "WHERE (i.is_deleted = false OR i.is_deleted IS NULL) ORDER BY i.id DESC";
         Connection con = null;
         try {
             con = ConexionBD.getInstance().getConnection();
@@ -177,7 +215,7 @@ public class Item {
                      "LEFT JOIN categories c ON i.category_id = c.id " +
                      "LEFT JOIN locations l ON i.location_id = l.id " +
                      "LEFT JOIN statuses s ON i.status_id = s.id " +
-                     "WHERE i.is_deleted = false AND (i.name ILIKE ? OR i.code ILIKE ?)";
+                     "WHERE (i.is_deleted = false OR i.is_deleted IS NULL) AND (i.name ILIKE ? OR i.code ILIKE ?)";
         Connection con = null;
         try {
             con = ConexionBD.getInstance().getConnection();

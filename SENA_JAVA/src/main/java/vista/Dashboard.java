@@ -49,6 +49,13 @@ public class Dashboard extends JFrame {
     private JLabel lblReservas       = new JLabel("0");
     private JLabel lblElementosEstado = new JLabel(
         "<html><div style='text-align:center'>0<br><span style='font-size:10px;font-weight:normal;'>Total</span></div></html>");
+    private JLabel lblPrestamosPorMes = new JLabel("Cargando...", SwingConstants.CENTER);
+    private JPanel panelProximasDevoluciones = new JPanel();
+    private JPanel panelActividadReciente = new JPanel();
+
+    // --- Notificaciones en vivo ---
+    private JLabel lblBell;
+    private int contadorNoLeidas = 0;
 
     private ControladorDashboard controlador;
 
@@ -75,7 +82,7 @@ public class Dashboard extends JFrame {
         contenedorCentral.setOpaque(false);
 
         contenedorCentral.add(crearContenidoPrincipal(),           "Inicio");
-        
+
         // --- Integración del Módulo de Inventario (MVC) ---
         VistaInventario vistaInventario = new VistaInventario();
         Item modeloItem = new Item();
@@ -120,11 +127,34 @@ public class Dashboard extends JFrame {
         DashboardDAO dao = new DashboardDAO();
         controlador = new ControladorDashboard(this, dao);
         controlador.iniciar();
+
+        // Badge en vivo: consulta la BD en background cada 30 segundos
+        actualizarBadgeNotificaciones();
+        Timer timerBadge = new Timer(30_000, e -> actualizarBadgeNotificaciones());
+        timerBadge.start();
     }
 
-    // =========================================================
-    //  Actualizar métricas (llamado desde el controlador)
-    // =========================================================
+    /** Consulta la BD en background y repinta la campana con el número real. */
+    public void actualizarBadgeNotificaciones() {
+        new SwingWorker<Integer, Void>() {
+            @Override
+            protected Integer doInBackground() {
+                try {
+                    return new modelo.Notificacion().contarNoLeidas();
+                } catch (Exception ex) {
+                    return 0;
+                }
+            }
+            @Override
+            protected void done() {
+                try {
+                    contadorNoLeidas = get();
+                    if (lblBell != null) lblBell.repaint();
+                } catch (Exception ignored) {}
+            }
+        }.execute();
+    }
+
     public void actualizarMetricas(EstadisticasDashboard stats) {
         lblTotalItems.setText(String.valueOf(stats.getTotalElementos()));
         lblDisponibles.setText(String.valueOf(stats.getDisponibles()));
@@ -134,6 +164,43 @@ public class Dashboard extends JFrame {
         lblElementosEstado.setText("<html><div style='text-align:center'>"
             + stats.getTotalElementos()
             + "<br><span style='font-size:10px;font-weight:normal;'>Total</span></div></html>");
+
+        if (stats.getPrestamosPorMes() != null && !stats.getPrestamosPorMes().isEmpty()) {
+            lblPrestamosPorMes.setText("<html>" + String.join("<br>", stats.getPrestamosPorMes()) + "</html>");
+        } else {
+            lblPrestamosPorMes.setText("Sin préstamos registrados");
+        }
+
+        panelProximasDevoluciones.removeAll();
+        if (stats.getProximasDevoluciones() != null && !stats.getProximasDevoluciones().isEmpty()) {
+            for (String dev : stats.getProximasDevoluciones()) {
+                JLabel lbl = new JLabel(dev);
+                lbl.setForeground(new Color(148, 163, 184));
+                lbl.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+                panelProximasDevoluciones.add(lbl);
+            }
+        } else {
+            JLabel empty = new JLabel("No hay devoluciones pendientes", SwingConstants.CENTER);
+            empty.setForeground(new Color(148, 163, 184));
+            empty.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+            panelProximasDevoluciones.add(empty);
+        }
+
+        panelActividadReciente.removeAll();
+        if (stats.getActividadReciente() != null && !stats.getActividadReciente().isEmpty()) {
+            for (String act : stats.getActividadReciente()) {
+                JLabel lbl = new JLabel(act);
+                lbl.setForeground(new Color(148, 163, 184));
+                lbl.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+                panelActividadReciente.add(lbl);
+            }
+        } else {
+            JLabel empty = new JLabel("No hay actividad reciente", SwingConstants.CENTER);
+            empty.setForeground(new Color(148, 163, 184));
+            empty.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+            panelActividadReciente.add(empty);
+        }
+
         revalidate();
         repaint();
     }
@@ -322,7 +389,6 @@ public class Dashboard extends JFrame {
         pnl.setMaximumSize(new Dimension(240, 42));
         pnl.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
-        // Si está colapsado usar borde redondeado
         if (!isSidebarExpanded) {
             pnl.setLayout(new FlowLayout(FlowLayout.CENTER, 0, 8));
             pnl.setMaximumSize(new Dimension(60, 42));
@@ -392,12 +458,14 @@ public class Dashboard extends JFrame {
         lblContacto.setCursor(new Cursor(Cursor.HAND_CURSOR));
         rightPanel.add(lblContacto);
 
-        // Campana con badge
-        JLabel lblBell = new JLabel() {
+        // Campana con badge en vivo
+        lblBell = new JLabel() {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                // Dibuja la campana
                 g2.setColor(Color.WHITE);
                 g2.setStroke(new BasicStroke(1.5f));
                 g2.drawArc(4, 6, 12, 10, 0, 180);
@@ -405,18 +473,34 @@ public class Dashboard extends JFrame {
                 g2.drawLine(16, 11, 16, 16);
                 g2.drawLine(2, 16, 18, 16);
                 g2.drawArc(8, 16, 4, 4, 180, 180);
-                g2.setColor(new Color(239, 68, 68));
-                g2.fillOval(12, 2, 8, 8);
-                g2.setColor(Color.WHITE);
-                g2.setFont(new Font("Segoe UI", Font.BOLD, 8));
-                g2.drawString("2", 14, 9);
+
+                // Badge solo si hay notificaciones no leídas
+                if (contadorNoLeidas > 0) {
+                    String texto = contadorNoLeidas > 99 ? "99+" : String.valueOf(contadorNoLeidas);
+                    int badgeW = texto.length() == 1 ? 9 : (texto.length() == 2 ? 13 : 17);
+                    int badgeX = getWidth() - badgeW - 1;
+                    g2.setColor(new Color(239, 68, 68));
+                    g2.fillRoundRect(badgeX, 0, badgeW, 9, 5, 5);
+                    g2.setColor(Color.WHITE);
+                    g2.setFont(new Font("Segoe UI", Font.BOLD, 7));
+                    FontMetrics fm = g2.getFontMetrics();
+                    int tx = badgeX + (badgeW - fm.stringWidth(texto)) / 2;
+                    g2.drawString(texto, tx, 8);
+                }
                 g2.dispose();
             }
         };
-        lblBell.setPreferredSize(new Dimension(24, 24));
+        lblBell.setPreferredSize(new Dimension(28, 24));
         lblBell.setCursor(new Cursor(Cursor.HAND_CURSOR));
         lblBell.addMouseListener(new MouseAdapter() {
-            @Override public void mouseClicked(MouseEvent e) { cambiarSeccion("Notificaciones"); }
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                cambiarSeccion("Notificaciones");
+                // Refrescar badge 1 segundo después (tiempo para leer notifs)
+                Timer t = new Timer(1000, ev -> actualizarBadgeNotificaciones());
+                t.setRepeats(false);
+                t.start();
+            }
         });
         rightPanel.add(lblBell);
 
@@ -465,9 +549,9 @@ public class Dashboard extends JFrame {
         middleRow.setOpaque(false);
         middleRow.setPreferredSize(new Dimension(0, 220));
 
-        middleRow.add(crearCardGrafica("Préstamos por mes",   true));
+        middleRow.add(crearCardGrafica("Préstamos por mes",   false));
         middleRow.add(crearCardGrafica("Elementos por estado", false));
-        crearActivityPanel_y_agregar(middleRow);
+        middleRow.add(crearActivityPanel());
 
         // Fila inferior
         JPanel bottomRow = new JPanel(new GridLayout(1, 3, 15, 0));
@@ -497,7 +581,6 @@ public class Dashboard extends JFrame {
         lblTitle.setForeground(new Color(148, 163, 184));
         lblTitle.setFont(new Font("Segoe UI", Font.PLAIN, 12));
 
-        // Icono de acento
         JPanel iconCircle = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
@@ -545,38 +628,27 @@ public class Dashboard extends JFrame {
         lblTitle.setForeground(Color.WHITE);
         header.add(lblTitle, BorderLayout.WEST);
 
-        if (conCombo) {
-            JPanel combo = new JPanel() {
-                @Override protected void paintComponent(Graphics g) {
-                    Graphics2D g2 = (Graphics2D) g.create();
-                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                    g2.setColor(new Color(255, 255, 255, 20));
-                    g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
-                    g2.dispose();
-                }
-            };
-            combo.setOpaque(false);
-            combo.setBorder(new EmptyBorder(4, 10, 4, 10));
-            JLabel lblCombo = new JLabel("Este año ▾");
-            lblCombo.setForeground(Color.WHITE);
-            lblCombo.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-            combo.add(lblCombo);
-            header.add(combo, BorderLayout.EAST);
-        }
-
         pnl.add(header, BorderLayout.NORTH);
 
-        // Contenido placeholder
-        JLabel placeholder;
         if (title.equals("Elementos por estado")) {
             lblElementosEstado.setHorizontalAlignment(SwingConstants.CENTER);
             lblElementosEstado.setFont(new Font("Segoe UI", Font.BOLD, 16));
             lblElementosEstado.setForeground(Color.WHITE);
             pnl.add(lblElementosEstado, BorderLayout.CENTER);
+        } else if (title.equals("Préstamos por mes")) {
+            lblPrestamosPorMes.setForeground(new Color(148, 163, 184));
+            lblPrestamosPorMes.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+            pnl.add(lblPrestamosPorMes, BorderLayout.CENTER);
+        } else if (title.equals("Próximas devoluciones")) {
+            panelProximasDevoluciones.setLayout(new BoxLayout(panelProximasDevoluciones, BoxLayout.Y_AXIS));
+            panelProximasDevoluciones.setOpaque(false);
+            JLabel empty = new JLabel("Cargando...", SwingConstants.CENTER);
+            empty.setForeground(new Color(148, 163, 184));
+            empty.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+            panelProximasDevoluciones.add(empty);
+            pnl.add(panelProximasDevoluciones, BorderLayout.CENTER);
         } else {
-            String msg = title.equals("Próximas devoluciones") ? "No hay devoluciones pendientes"
-                       : title.equals("Categorías principales") ? "Sin datos registrados" : "";
-            placeholder = new JLabel(msg, SwingConstants.CENTER);
+            JLabel placeholder = new JLabel("Sin datos registrados", SwingConstants.CENTER);
             placeholder.setForeground(new Color(148, 163, 184));
             placeholder.setFont(new Font("Segoe UI", Font.PLAIN, 12));
             pnl.add(placeholder, BorderLayout.CENTER);
@@ -585,7 +657,7 @@ public class Dashboard extends JFrame {
         return pnl;
     }
 
-    private void crearActivityPanel_y_agregar(JPanel parent) {
+    private JPanel crearActivityPanel() {
         PanelCristal pnl = new PanelCristal();
         pnl.setLayout(new BorderLayout());
         pnl.setBorder(new EmptyBorder(18, 18, 18, 18));
@@ -595,10 +667,13 @@ public class Dashboard extends JFrame {
         lblTitle.setForeground(Color.WHITE);
         pnl.add(lblTitle, BorderLayout.NORTH);
 
-        JLabel lblEmpty = new JLabel("No hay actividad reciente", SwingConstants.CENTER);
-        lblEmpty.setForeground(new Color(148, 163, 184));
-        lblEmpty.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        pnl.add(lblEmpty, BorderLayout.CENTER);
+        panelActividadReciente.setLayout(new BoxLayout(panelActividadReciente, BoxLayout.Y_AXIS));
+        panelActividadReciente.setOpaque(false);
+        JLabel empty = new JLabel("No hay actividad reciente", SwingConstants.CENTER);
+        empty.setForeground(new Color(148, 163, 184));
+        empty.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        panelActividadReciente.add(empty);
+        pnl.add(panelActividadReciente, BorderLayout.CENTER);
 
         JLabel lblLink = new JLabel("Ver todas las actividades", SwingConstants.CENTER);
         lblLink.setForeground(SenaColores.VERDE_SENA);
@@ -606,7 +681,7 @@ public class Dashboard extends JFrame {
         lblLink.setCursor(new Cursor(Cursor.HAND_CURSOR));
         pnl.add(lblLink, BorderLayout.SOUTH);
 
-        parent.add(pnl);
+        return pnl;
     }
 
     // =========================================================
