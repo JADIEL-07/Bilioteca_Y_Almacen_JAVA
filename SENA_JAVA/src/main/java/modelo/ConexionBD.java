@@ -5,10 +5,11 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 /**
- * Pool de conexiones liviano para evitar crear una nueva conexión en cada query.
- * Tamaño del pool: 5 conexiones reutilizables.
+ * Pool de conexiones liviano y optimizado para alto rendimiento y concurrencia.
+ * Evita la creación excesiva de conexiones y fugas de memoria.
  */
 public class ConexionBD {
 
@@ -16,7 +17,7 @@ public class ConexionBD {
     private static final String USUARIO = "Jadiel_Zz";
     private static final String CLAVE   = "12872Jadiel#";
 
-    private static final int POOL_SIZE = 5;
+    private static final int POOL_SIZE = 10; // Aumentado a 10 para soportar mejor la carga
     private static final BlockingQueue<Connection> pool = new ArrayBlockingQueue<>(POOL_SIZE);
 
     // Instancia singleton
@@ -28,7 +29,7 @@ public class ConexionBD {
             for (int i = 0; i < POOL_SIZE; i++) {
                 pool.offer(crearNuevaConexion());
             }
-            System.out.println("Pool de " + POOL_SIZE + " conexiones listo.");
+            System.out.println("Pool de " + POOL_SIZE + " conexiones inicializado.");
         } catch (Exception ex) {
             System.err.println("Error al inicializar pool de conexiones: " + ex.getMessage());
         }
@@ -44,37 +45,47 @@ public class ConexionBD {
     public static Connection conexion = null;
 
     /**
-     * Obtiene una conexión del pool. Si el pool está vacío crea una nueva temporal.
-     * Siempre devuelve la conexión con releaseConnection() en el bloque finally.
+     * Obtiene una conexión del pool de manera segura.
+     * Espera hasta 5 segundos si el pool está vacío.
      */
     public Connection getConnection() throws SQLException {
-        Connection con = pool.poll();
-        if (con == null || con.isClosed()) {
-            con = crearNuevaConexion();
-        } else {
-            try {
-                if (!con.isValid(1)) {
-                    con = crearNuevaConexion();
+        try {
+            // Esperar hasta 5 segundos por una conexión disponible
+            Connection con = pool.poll(5, TimeUnit.SECONDS);
+            
+            if (con != null) {
+                // Validar la conexión (1 segundo timeout)
+                if (con.isClosed() || !con.isValid(1)) {
+                    // Si estaba rota o cerrada, creamos una nueva para reemplazarla
+                    return crearNuevaConexion();
                 }
-            } catch (SQLException e) {
-                con = crearNuevaConexion();
+                return con;
+            } else {
+                // Timeout: el pool está a su máxima capacidad y ocupado
+                System.err.println("[ConexionBD] Advertencia: Pool saturado. Creando conexión temporal.");
+                return crearNuevaConexion(); // Conexión de emergencia
             }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new SQLException("Hilo interrumpido esperando conexión.", e);
         }
-        return con;
     }
 
     /**
      * Devuelve la conexión al pool para reutilizarla.
-     * Llama a este método en el bloque finally después de usar getConnection().
+     * Si la conexión era temporal (excedía el POOL_SIZE), se cierra de forma segura.
      */
     public void releaseConnection(Connection con) {
         if (con != null) {
             try {
                 if (!con.isClosed()) {
-                    pool.offer(con);
+                    // offer() retorna false si la cola (pool) está llena
+                    if (!pool.offer(con)) {
+                        con.close(); // Si el pool está lleno, es una conexión temporal. La cerramos.
+                    }
                 }
             } catch (SQLException e) {
-                // Descartar conexión inválida
+                System.err.println("Error al cerrar o liberar conexión: " + e.getMessage());
             }
         }
     }
@@ -85,7 +96,11 @@ public class ConexionBD {
 
     public static void desconectar() {
         for (Connection c : pool) {
-            try { if (c != null && !c.isClosed()) c.close(); } catch (SQLException ignored) {}
+            try { 
+                if (c != null && !c.isClosed()) {
+                    c.close(); 
+                }
+            } catch (SQLException ignored) {}
         }
         pool.clear();
     }

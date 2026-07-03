@@ -11,6 +11,7 @@ import vista.Dashboard;
  */
 public class ControladorDashboard {
 
+    private SwingWorker<EstadisticasDashboard, Void> currentWorker;
     private Dashboard vista;
     private DashboardDAO modelo;
     private javax.swing.Timer autoRefreshTimer;
@@ -31,7 +32,11 @@ public class ControladorDashboard {
 
     /** Carga datos en un hilo de fondo y actualiza la UI en el EDT. */
     public void cargarAsync() {
-        new SwingWorker<EstadisticasDashboard, Void>() {
+        if (currentWorker != null && !currentWorker.isDone()) {
+            currentWorker.cancel(true);
+        }
+        
+        currentWorker = new SwingWorker<EstadisticasDashboard, Void>() {
             @Override
             protected EstadisticasDashboard doInBackground() {
                 return modelo.obtenerEstadisticas();
@@ -46,7 +51,8 @@ public class ControladorDashboard {
                     System.err.println("Error al actualizar dashboard: " + e.getMessage());
                 }
             }
-        }.execute();
+        };
+        currentWorker.execute();
     }
 
     public void detener() {

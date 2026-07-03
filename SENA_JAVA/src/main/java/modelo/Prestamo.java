@@ -161,6 +161,26 @@ public class Prestamo {
         throw new DateTimeParseException("Formato de fecha no válido: " + fecha, fecha, 0);
     }
 
+    /** Actualiza el estado y fecha de devolución de un préstamo por su ID. */
+    public boolean modificarEstado(int loanId, String nuevoEstado, String nuevaFechaDevolucion) {
+        Connection con = null;
+        try {
+            con = ConexionBD.getInstance().getConnection();
+            String sql = "UPDATE loans SET status = ?, due_date = ? WHERE id = ?";
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+                ps.setString(1, nuevoEstado.toUpperCase());
+                ps.setDate(2, java.sql.Date.valueOf(parsearFecha(nuevaFechaDevolucion)));
+                ps.setInt(3, loanId);
+                return ps.executeUpdate() > 0;
+            }
+        } catch (Exception e) {
+            System.err.println("Error al modificar préstamo: " + e.getMessage());
+            return false;
+        } finally {
+            if (con != null) ConexionBD.getInstance().releaseConnection(con);
+        }
+    }
+
     public static void inicializarTabla() {
         System.out.println("Tabla 'loans' remota ya verificada.");
     }

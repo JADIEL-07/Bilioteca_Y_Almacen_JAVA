@@ -35,14 +35,27 @@ public class ControladorInventario implements ActionListener, KeyListener {
         }
         
         cargarDatosTabla("");
-        autoRefresh = new Timer(30000, e -> cargarDatosTabla(vista.getTxtBuscar().getText()));
+        autoRefresh = new Timer(15000, e -> { if (vista.isShowing()) cargarDatosTabla(vista.getTxtBuscar().getText()); });
         autoRefresh.start();
+
+        // Conectar el modal de edición
+        vista.setControladorEditar(this);
+        vista.setOnEditarItem(() -> {
+            int fila = vista.getTabla().getSelectedRow();
+            if (fila < 0) return;
+            int id          = (int) vista.getModeloTabla().getValueAt(fila, 0);
+            String nombre   = (String) vista.getModeloTabla().getValueAt(fila, 1);
+            String codigo   = (String) vista.getModeloTabla().getValueAt(fila, 2);
+            String stock    = String.valueOf(vista.getModeloTabla().getValueAt(fila, 4));
+            String ubicacion = String.valueOf(vista.getModeloTabla().getValueAt(fila, 6));
+            String estado   = String.valueOf(vista.getModeloTabla().getValueAt(fila, 7));
+            vista.abrirEditorFila(id, nombre, codigo, stock, ubicacion, estado);
+        });
     }
     
     public void cargarDatosTabla(String filtro) {
         DefaultTableModel tablaModelo = vista.getModeloTabla();
-        tablaModelo.setRowCount(0);
-
+        
         new SwingWorker<List<Item>, Void>() {
             @Override
             protected List<Item> doInBackground() {
@@ -70,7 +83,8 @@ public class ControladorInventario implements ActionListener, KeyListener {
                                 item.getNombre(),
                                 item.getCodigo(),
                                 item.getCategoria(),
-                                item.getCantidad(),
+                                item.getCantidad(),     // Stock Total
+                                item.getDisponibles(),  // Disponibles
                                 item.getUbicacion() != null ? item.getUbicacion() : "",
                                 item.getEstado()
                             });
@@ -120,11 +134,58 @@ public class ControladorInventario implements ActionListener, KeyListener {
             if (modelo.insertar()) {
                 AuditLog.registrar("admin", "CREATE", "Inventario", "Item: " + nombre + " (" + codigo + ")");
                 JOptionPane.showMessageDialog(vista, "Elemento guardado con éxito.");
-                vista.getDialogo().setVisible(false);
+                vista.cerrarDialogo();
                 vista.limpiarFormulario();
                 cargarDatosTabla("");
             } else {
                 JOptionPane.showMessageDialog(vista, "Error al guardar el elemento.");
+            }
+        }
+
+        if (accion.equals("EditarGuardar")) {
+            int id = vista.getIdItemSeleccionado();
+            if (id < 0) return;
+
+            String cantidadStr = vista.getTxtEditCantidad().getText().trim();
+            String ubicacion   = (String) vista.getCbEditUbicacion().getSelectedItem();
+            String estadoSel   = (String) vista.getCbEditEstado().getSelectedItem();
+
+            if (cantidadStr.isEmpty()) {
+                JOptionPane.showMessageDialog(vista, "El stock total no puede estar vacío.");
+                return;
+            }
+
+            int cantidad;
+            try {
+                cantidad = Integer.parseInt(cantidadStr);
+                if (cantidad < 0) throw new NumberFormatException();
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(vista, "El stock debe ser un número entero positivo.");
+                return;
+            }
+
+            // Obtener nombre y código actuales desde la fila seleccionada
+            int fila = vista.getTabla().getSelectedRow();
+            String nombre   = (String) vista.getModeloTabla().getValueAt(fila, 1);
+            String codigo   = (String) vista.getModeloTabla().getValueAt(fila, 2);
+            String categoria = (String) vista.getModeloTabla().getValueAt(fila, 3);
+
+            modelo.setId(id);
+            modelo.setNombre(nombre);
+            modelo.setCodigo(codigo);
+            modelo.setCategoria(categoria);
+            modelo.setCantidad(cantidad);
+            modelo.setUbicacion(ubicacion);
+            modelo.setEstado(estadoSel != null ? estadoSel : "Disponible");
+
+            if (modelo.modificar()) {
+                AuditLog.registrar("admin", "UPDATE", "Inventario",
+                    "Stock actualizado: " + nombre + " → " + cantidad + " unidades");
+                JOptionPane.showMessageDialog(vista, "✅ Elemento actualizado con éxito.");
+                vista.cerrarDialogoEditar();
+                cargarDatosTabla("");
+            } else {
+                JOptionPane.showMessageDialog(vista, "Error al actualizar el elemento.");
             }
         }
     }

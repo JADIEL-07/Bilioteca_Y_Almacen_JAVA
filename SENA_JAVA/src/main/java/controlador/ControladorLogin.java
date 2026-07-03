@@ -11,6 +11,7 @@ import java.awt.event.ActionListener;
 import org.mindrot.jbcrypt.BCrypt;
 
 public class ControladorLogin implements ActionListener {
+    private SwingWorker<Boolean, Void> currentWorker;
     
     private Login vistaLogin;
     
@@ -50,7 +51,11 @@ public class ControladorLogin implements ActionListener {
         vistaLogin.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 
         // SwingWorker: la consulta corre en segundo plano, la UI no se congela
-        new SwingWorker<Boolean, Void>() {
+        if (currentWorker != null && !currentWorker.isDone()) {
+            currentWorker.cancel(true);
+        }
+        
+        currentWorker = new SwingWorker<Boolean, Void>() {
             @Override
             protected Boolean doInBackground() {
                 // Consulta directa: solo busca el hash del usuario específico (no trae todos)
@@ -82,7 +87,8 @@ public class ControladorLogin implements ActionListener {
                     System.err.println("Error en login: " + ex.getMessage());
                 }
             }
-        }.execute();
+        };
+        currentWorker.execute();
     }
 
     private void manejarRegistro() {
@@ -101,8 +107,7 @@ public class ControladorLogin implements ActionListener {
         vistaLogin.getBtnReg().setEnabled(false);
         vistaLogin.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 
-        // Hash y guardado en segundo plano
-        new SwingWorker<Boolean, Void>() {
+        currentWorker = new SwingWorker<Boolean, Void>() {
             @Override
             protected Boolean doInBackground() {
                 Usuario nuevo = new Usuario();
@@ -133,6 +138,7 @@ public class ControladorLogin implements ActionListener {
                     System.err.println("Error en registro: " + ex.getMessage());
                 }
             }
-        }.execute();
+        };
+        currentWorker.execute();
     }
 }

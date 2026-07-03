@@ -22,7 +22,7 @@ public class ControladorAuditLog implements KeyListener {
         this.modelo = modelo;
         this.vista.setControlador(this);
         cargarDatosTabla("");
-        autoRefresh = new Timer(15000, e -> cargarDatosTabla(vista.getTxtBuscar().getText()));
+        autoRefresh = new Timer(15000, e -> { if (vista.isShowing()) cargarDatosTabla(vista.getTxtBuscar().getText()); });
         autoRefresh.start();
     }
     

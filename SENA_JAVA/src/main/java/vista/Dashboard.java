@@ -130,7 +130,7 @@ public class Dashboard extends JFrame {
 
         // Badge en vivo: consulta la BD en background cada 30 segundos
         actualizarBadgeNotificaciones();
-        Timer timerBadge = new Timer(30_000, e -> actualizarBadgeNotificaciones());
+        Timer timerBadge = new Timer(30_000, e -> { if(isShowing()) actualizarBadgeNotificaciones(); });
         timerBadge.start();
     }
 

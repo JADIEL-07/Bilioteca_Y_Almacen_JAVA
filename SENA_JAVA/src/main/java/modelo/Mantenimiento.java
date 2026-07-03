@@ -153,6 +153,25 @@ public class Mantenimiento {
         return lista;
     }
 
+    /** Actualiza el estado de un mantenimiento por su ID. */
+    public boolean modificarEstado(int mantenimientoId, String nuevoEstado) {
+        Connection con = null;
+        try {
+            con = ConexionBD.getInstance().getConnection();
+            String sql = "UPDATE maintenance SET status = ? WHERE id = ?";
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+                ps.setString(1, nuevoEstado.toUpperCase());
+                ps.setInt(2, mantenimientoId);
+                return ps.executeUpdate() > 0;
+            }
+        } catch (SQLException e) {
+            System.err.println("Error al modificar mantenimiento: " + e.getMessage());
+            return false;
+        } finally {
+            if (con != null) ConexionBD.getInstance().releaseConnection(con);
+        }
+    }
+
     public static void inicializarTabla() {
         System.out.println("Tabla 'maintenance' remota ya verificada.");
     }

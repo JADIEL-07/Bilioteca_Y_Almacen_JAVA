@@ -34,8 +34,20 @@ public class ControladorMantenimiento implements ActionListener, KeyListener {
         }
 
         cargarDatosTabla("");
-        autoRefresh = new Timer(30000, e -> cargarDatosTabla(vista.getTxtBuscar().getText()));
+        autoRefresh = new Timer(30000, e -> { if (vista.isShowing()) cargarDatosTabla(vista.getTxtBuscar().getText()); });
         autoRefresh.start();
+
+        // Conectar modal de edición de estado
+        vista.setControladorEditar(this);
+        vista.setOnEditarFila(() -> {
+            int fila = vista.getTabla().getSelectedRow();
+            if (fila < 0) return;
+            int id       = (int)   vista.getModeloTabla().getValueAt(fila, 0);
+            String item  = (String) vista.getModeloTabla().getValueAt(fila, 1);
+            String desc  = (String) vista.getModeloTabla().getValueAt(fila, 2);
+            String estado = (String) vista.getModeloTabla().getValueAt(fila, 5);
+            vista.abrirEditorFila(id, "Item: " + item + "  |  " + desc, estado);
+        });
     }
 
     public void cargarDatosTabla(String filtro) {
@@ -113,6 +125,21 @@ public class ControladorMantenimiento implements ActionListener, KeyListener {
             } else {
                 JOptionPane.showMessageDialog(vista,
                     "❌ Error al registrar el reporte. Verifica que el elemento exista en inventario.");
+            }
+        }
+
+        if (accion.equals("EditarGuardar")) {
+            int id = vista.getIdFilaSeleccionada();
+            if (id < 0) return;
+            String nuevoEstado = (String) vista.getCbEditEstado().getSelectedItem();
+            
+            if (modelo.modificarEstado(id, nuevoEstado)) {
+                AuditLog.registrar("admin", "UPDATE", "Mantenimiento", "ID " + id + " → " + nuevoEstado);
+                JOptionPane.showMessageDialog(vista, "✅ Estado de mantenimiento actualizado.");
+                vista.cerrarDialogoEditar();
+                cargarDatosTabla("");
+            } else {
+                JOptionPane.showMessageDialog(vista, "Error al actualizar el estado.");
             }
         }
     }

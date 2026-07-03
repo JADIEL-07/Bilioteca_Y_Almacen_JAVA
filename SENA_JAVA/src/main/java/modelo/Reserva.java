@@ -117,6 +117,25 @@ public class Reserva {
         return lista;
     }
     
+    /** Actualiza el estado de una reserva por su ID. */
+    public boolean modificarEstado(int reservaId, String nuevoEstado) {
+        Connection con = null;
+        try {
+            con = ConexionBD.getInstance().getConnection();
+            String sql = "UPDATE reservations SET status = ? WHERE id = ?";
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+                ps.setString(1, nuevoEstado.toUpperCase());
+                ps.setInt(2, reservaId);
+                return ps.executeUpdate() > 0;
+            }
+        } catch (SQLException e) {
+            System.err.println("Error al modificar reserva: " + e.getMessage());
+            return false;
+        } finally {
+            if (con != null) ConexionBD.getInstance().releaseConnection(con);
+        }
+    }
+
     public static void inicializarTabla() {
         System.out.println("Tabla 'reservations' remota ya verificada.");
     }

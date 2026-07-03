@@ -35,7 +35,7 @@ public class ControladorUsuario implements ActionListener, KeyListener {
         }
 
         cargarDatosTabla("");
-        autoRefresh = new Timer(30000, e -> cargarDatosTabla(vista.getTxtBuscar().getText()));
+        autoRefresh = new Timer(30000, e -> { if (vista.isShowing()) cargarDatosTabla(vista.getTxtBuscar().getText()); });
         autoRefresh.start();
     }
 
