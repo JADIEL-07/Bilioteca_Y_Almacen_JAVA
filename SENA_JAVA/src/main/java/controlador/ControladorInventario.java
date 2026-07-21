@@ -124,22 +124,43 @@ public class ControladorInventario implements ActionListener, KeyListener {
                 return;
             }
 
-            modelo.setNombre(nombre);
-            modelo.setCodigo(codigo);
-            modelo.setCategoria(categoria);
-            modelo.setCantidad(cantidad);
-            modelo.setUbicacion(ubicacion);
-            modelo.setEstado(estadoSel != null ? estadoSel : "Disponible");
+            Item itemInsertar = new Item();
+            itemInsertar.setNombre(nombre);
+            itemInsertar.setCodigo(codigo);
+            itemInsertar.setCategoria(categoria);
+            itemInsertar.setCantidad(cantidad);
+            itemInsertar.setUbicacion(ubicacion);
+            itemInsertar.setEstado(estadoSel != null ? estadoSel : "Disponible");
 
-            if (modelo.insertar()) {
-                AuditLog.registrar("admin", "CREATE", "Inventario", "Item: " + nombre + " (" + codigo + ")");
-                JOptionPane.showMessageDialog(vista, "Elemento guardado con éxito.");
-                vista.cerrarDialogo();
-                vista.limpiarFormulario();
-                cargarDatosTabla("");
-            } else {
-                JOptionPane.showMessageDialog(vista, "Error al guardar el elemento.");
-            }
+            vista.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.WAIT_CURSOR));
+
+            new SwingWorker<Boolean, Void>() {
+                @Override
+                protected Boolean doInBackground() {
+                    boolean ok = itemInsertar.insertar();
+                    if (ok) {
+                        AuditLog.registrar("admin", "CREATE", "Inventario", "Item: " + nombre + " (" + codigo + ")");
+                    }
+                    return ok;
+                }
+
+                @Override
+                protected void done() {
+                    vista.setCursor(java.awt.Cursor.getDefaultCursor());
+                    try {
+                        if (get()) {
+                            JOptionPane.showMessageDialog(vista, "Elemento guardado con éxito.");
+                            vista.cerrarDialogo();
+                            vista.limpiarFormulario();
+                            cargarDatosTabla("");
+                        } else {
+                            JOptionPane.showMessageDialog(vista, "Error al guardar el elemento.");
+                        }
+                    } catch (Exception ex) {
+                        JOptionPane.showMessageDialog(vista, "Error de red al guardar: " + ex.getMessage());
+                    }
+                }
+            }.execute();
         }
 
         if (accion.equals("EditarGuardar")) {
@@ -164,29 +185,49 @@ public class ControladorInventario implements ActionListener, KeyListener {
                 return;
             }
 
-            // Obtener nombre y código actuales desde la fila seleccionada
             int fila = vista.getTabla().getSelectedRow();
             String nombre   = (String) vista.getModeloTabla().getValueAt(fila, 1);
             String codigo   = (String) vista.getModeloTabla().getValueAt(fila, 2);
             String categoria = (String) vista.getModeloTabla().getValueAt(fila, 3);
 
-            modelo.setId(id);
-            modelo.setNombre(nombre);
-            modelo.setCodigo(codigo);
-            modelo.setCategoria(categoria);
-            modelo.setCantidad(cantidad);
-            modelo.setUbicacion(ubicacion);
-            modelo.setEstado(estadoSel != null ? estadoSel : "Disponible");
+            Item itemEditar = new Item();
+            itemEditar.setId(id);
+            itemEditar.setNombre(nombre);
+            itemEditar.setCodigo(codigo);
+            itemEditar.setCategoria(categoria);
+            itemEditar.setCantidad(cantidad);
+            itemEditar.setUbicacion(ubicacion);
+            itemEditar.setEstado(estadoSel != null ? estadoSel : "Disponible");
 
-            if (modelo.modificar()) {
-                AuditLog.registrar("admin", "UPDATE", "Inventario",
-                    "Stock actualizado: " + nombre + " → " + cantidad + " unidades");
-                JOptionPane.showMessageDialog(vista, "✅ Elemento actualizado con éxito.");
-                vista.cerrarDialogoEditar();
-                cargarDatosTabla("");
-            } else {
-                JOptionPane.showMessageDialog(vista, "Error al actualizar el elemento.");
-            }
+            vista.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.WAIT_CURSOR));
+
+            new SwingWorker<Boolean, Void>() {
+                @Override
+                protected Boolean doInBackground() {
+                    boolean ok = itemEditar.modificar();
+                    if (ok) {
+                        AuditLog.registrar("admin", "UPDATE", "Inventario",
+                            "Stock actualizado: " + nombre + " → " + cantidad + " unidades");
+                    }
+                    return ok;
+                }
+
+                @Override
+                protected void done() {
+                    vista.setCursor(java.awt.Cursor.getDefaultCursor());
+                    try {
+                        if (get()) {
+                            JOptionPane.showMessageDialog(vista, "✅ Elemento actualizado con éxito.");
+                            vista.cerrarDialogoEditar();
+                            cargarDatosTabla("");
+                        } else {
+                            JOptionPane.showMessageDialog(vista, "Error al actualizar el elemento.");
+                        }
+                    } catch (Exception ex) {
+                        JOptionPane.showMessageDialog(vista, "Error de red al actualizar: " + ex.getMessage());
+                    }
+                }
+            }.execute();
         }
     }
 

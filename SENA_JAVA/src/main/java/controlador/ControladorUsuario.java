@@ -85,22 +85,43 @@ public class ControladorUsuario implements ActionListener, KeyListener {
                 return;
             }
 
-            modelo.setNombre(nombre);
-            modelo.setDocumento(documento);
-            modelo.setTipo(tipo);
-            modelo.setEmail(email);
-            modelo.setCelular(celular);
-            modelo.setEstado("Activo");
+            Usuario uInsertar = new Usuario();
+            uInsertar.setNombre(nombre);
+            uInsertar.setDocumento(documento);
+            uInsertar.setTipo(tipo);
+            uInsertar.setEmail(email);
+            uInsertar.setCelular(celular);
+            uInsertar.setEstado("Activo");
 
-            if (modelo.insertar()) {
-                AuditLog.registrar("admin", "CREATE", "Usuarios", "Usuario: " + nombre + " (" + documento + ")");
-                JOptionPane.showMessageDialog(vista, "Usuario registrado con éxito.");
-                vista.getDialogo().setVisible(false);
-                vista.limpiarFormulario();
-                cargarDatosTabla("");
-            } else {
-                JOptionPane.showMessageDialog(vista, "Error al registrar. Puede que el documento ya exista.");
-            }
+            vista.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.WAIT_CURSOR));
+
+            new SwingWorker<Boolean, Void>() {
+                @Override
+                protected Boolean doInBackground() {
+                    boolean ok = uInsertar.insertar();
+                    if (ok) {
+                        AuditLog.registrar("admin", "CREATE", "Usuarios", "Usuario: " + nombre + " (" + documento + ")");
+                    }
+                    return ok;
+                }
+
+                @Override
+                protected void done() {
+                    vista.setCursor(java.awt.Cursor.getDefaultCursor());
+                    try {
+                        if (get()) {
+                            JOptionPane.showMessageDialog(vista, "Usuario registrado con éxito.");
+                            vista.getDialogo().setVisible(false);
+                            vista.limpiarFormulario();
+                            cargarDatosTabla("");
+                        } else {
+                            JOptionPane.showMessageDialog(vista, "Error al registrar. Puede que el documento ya exista.");
+                        }
+                    } catch (Exception ex) {
+                        JOptionPane.showMessageDialog(vista, "Error de red al registrar usuario: " + ex.getMessage());
+                    }
+                }
+            }.execute();
         }
     }
 

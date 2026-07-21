@@ -152,32 +152,61 @@ public class ControladorPrestamo implements ActionListener, KeyListener {
                 return;
             }
 
-            // Validar en el backend justo antes de guardar (por seguridad)
-            Item itemDispo = Item.consultarDisponibilidad(codigo);
-            if (itemDispo == null) {
-                JOptionPane.showMessageDialog(vista, "El ítem especificado no existe.");
-                return;
-            }
-            if (itemDispo.getDisponibles() <= 0) {
-                JOptionPane.showMessageDialog(vista, "No se puede completar el préstamo. No hay stock disponible actualmente.");
-                return;
-            }
-            
-            modelo.setDocumentoUsuario(documento);
-            modelo.setCodigoItem(codigo);
-            modelo.setFechaPrestamo(fechaPrestamo);
-            modelo.setFechaDevolucion(fechaDevolucion);
-            modelo.setEstado("Activo");
-            
-            if (modelo.insertar()) {
-                AuditLog.registrar("admin", "CREATE", "Préstamos", "Item: " + codigo + " / Usuario: " + documento);
-                JOptionPane.showMessageDialog(vista, "Préstamo registrado con éxito.");
-                vista.cerrarDialogo();
-                vista.limpiarFormulario();
-                cargarDatosTabla("");
-            } else {
-                JOptionPane.showMessageDialog(vista, "Error al registrar préstamo. Verifique el formato de fecha (YYYY-MM-DD).");
-            }
+            vista.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.WAIT_CURSOR));
+
+            new SwingWorker<String, Void>() {
+                @Override
+                protected String doInBackground() {
+                    Item itemDispo = Item.consultarDisponibilidad(codigo);
+                    if (itemDispo == null) {
+                        return "NO_EXISTE";
+                    }
+                    if (itemDispo.getDisponibles() <= 0) {
+                        return "NO_DISPONIBLE";
+                    }
+
+                    Prestamo pInsertar = new Prestamo();
+                    pInsertar.setDocumentoUsuario(documento);
+                    pInsertar.setCodigoItem(codigo);
+                    pInsertar.setFechaPrestamo(fechaPrestamo);
+                    pInsertar.setFechaDevolucion(fechaDevolucion);
+                    pInsertar.setEstado("Activo");
+
+                    if (pInsertar.insertar()) {
+                        AuditLog.registrar("admin", "CREATE", "Préstamos", "Item: " + codigo + " / Usuario: " + documento);
+                        return "OK";
+                    } else {
+                        return "ERROR";
+                    }
+                }
+
+                @Override
+                protected void done() {
+                    vista.setCursor(java.awt.Cursor.getDefaultCursor());
+                    try {
+                        String res = get();
+                        switch (res) {
+                            case "NO_EXISTE":
+                                JOptionPane.showMessageDialog(vista, "El ítem especificado no existe.");
+                                break;
+                            case "NO_DISPONIBLE":
+                                JOptionPane.showMessageDialog(vista, "No se puede completar el préstamo. No hay stock disponible actualmente.");
+                                break;
+                            case "OK":
+                                JOptionPane.showMessageDialog(vista, "Préstamo registrado con éxito.");
+                                vista.cerrarDialogo();
+                                vista.limpiarFormulario();
+                                cargarDatosTabla("");
+                                break;
+                            default:
+                                JOptionPane.showMessageDialog(vista, "Error al registrar préstamo. Verifique el formato de fecha (YYYY-MM-DD).");
+                                break;
+                        }
+                    } catch (Exception ex) {
+                        JOptionPane.showMessageDialog(vista, "Error de red al registrar préstamo: " + ex.getMessage());
+                    }
+                }
+            }.execute();
         }
 
         if (accion.equals("EditarGuardar")) {
@@ -189,14 +218,35 @@ public class ControladorPrestamo implements ActionListener, KeyListener {
                 JOptionPane.showMessageDialog(vista, "La fecha de devolución no puede estar vacía.");
                 return;
             }
-            if (modelo.modificarEstado(id, nuevoEstado, nuevaFecha)) {
-                AuditLog.registrar("admin", "UPDATE", "Préstamos", "ID " + id + " → " + nuevoEstado);
-                JOptionPane.showMessageDialog(vista, "✅ Estado actualizado correctamente.");
-                vista.cerrarDialogoEditar();
-                cargarDatosTabla("");
-            } else {
-                JOptionPane.showMessageDialog(vista, "Error al actualizar el estado.");
-            }
+
+            vista.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.WAIT_CURSOR));
+
+            new SwingWorker<Boolean, Void>() {
+                @Override
+                protected Boolean doInBackground() {
+                    boolean ok = modelo.modificarEstado(id, nuevoEstado, nuevaFecha);
+                    if (ok) {
+                        AuditLog.registrar("admin", "UPDATE", "Préstamos", "ID " + id + " → " + nuevoEstado);
+                    }
+                    return ok;
+                }
+
+                @Override
+                protected void done() {
+                    vista.setCursor(java.awt.Cursor.getDefaultCursor());
+                    try {
+                        if (get()) {
+                            JOptionPane.showMessageDialog(vista, "✅ Estado actualizado correctamente.");
+                            vista.cerrarDialogoEditar();
+                            cargarDatosTabla("");
+                        } else {
+                            JOptionPane.showMessageDialog(vista, "Error al actualizar el estado.");
+                        }
+                    } catch (Exception ex) {
+                        JOptionPane.showMessageDialog(vista, "Error de red al actualizar estado: " + ex.getMessage());
+                    }
+                }
+            }.execute();
         }
     }
 

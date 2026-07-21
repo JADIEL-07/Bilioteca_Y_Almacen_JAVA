@@ -42,12 +42,14 @@ public class PanelParticulasAnimadas extends JPanel {
         } catch (IOException e) {}
 
         particulas = new ArrayList<>();
-        for (int i = 0; i < 40; i++) particulas.add(new Particula());
+        for (int i = 0; i < 20; i++) particulas.add(new Particula());
 
         iconos = new ArrayList<>();
-        for (int i = 0; i < 20; i++) iconos.add(new IconoAnimado());
+        for (int i = 0; i < 10; i++) iconos.add(new IconoAnimado());
 
-        timer = new Timer(16, e -> {
+        // Optimización: 33ms (~30 FPS) en lugar de 16ms (60 FPS) para reducir uso de CPU
+        timer = new Timer(33, e -> {
+            if (!isShowing()) return; // No calcular ni repintar si el panel no es visible
             for (Particula p : particulas) p.update(getWidth(), getHeight());
             for (IconoAnimado ic : iconos) ic.update(getWidth(), getHeight());
             repaint();
