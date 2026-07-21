@@ -212,7 +212,7 @@ public class ControladorInventario implements ActionListener, KeyListener {
                     boolean ok = itemEditar.modificar();
                     if (ok) {
                         AuditLog.registrar("admin", "UPDATE", "Inventario",
-                            "Stock actualizado: " + nombre + " → " + cantidad + " unidades");
+                            "Stock actualizado: " + itemEditar.getNombre() + " → " + cantidad + " unidades");
                     }
                     return ok;
                 }
