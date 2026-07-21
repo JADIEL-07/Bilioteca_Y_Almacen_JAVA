@@ -19,6 +19,10 @@ public class ControladorInventario implements ActionListener, KeyListener {
     private Item modelo;
     private Timer autoRefresh;
     
+    private String nombreItemEditar = "";
+    private String codigoItemEditar = "";
+    private String categoriaItemEditar = "";
+    
     public ControladorInventario(VistaInventario vista, Item modelo) {
         this.vista = vista;
         this.modelo = modelo;
@@ -46,9 +50,15 @@ public class ControladorInventario implements ActionListener, KeyListener {
             int id          = (int) vista.getModeloTabla().getValueAt(fila, 0);
             String nombre   = (String) vista.getModeloTabla().getValueAt(fila, 1);
             String codigo   = (String) vista.getModeloTabla().getValueAt(fila, 2);
+            String categoria = (String) vista.getModeloTabla().getValueAt(fila, 3);
             String stock    = String.valueOf(vista.getModeloTabla().getValueAt(fila, 4));
             String ubicacion = String.valueOf(vista.getModeloTabla().getValueAt(fila, 6));
             String estado   = String.valueOf(vista.getModeloTabla().getValueAt(fila, 7));
+
+            this.nombreItemEditar = nombre;
+            this.codigoItemEditar = codigo;
+            this.categoriaItemEditar = categoria;
+
             vista.abrirEditorFila(id, nombre, codigo, stock, ubicacion, estado);
         });
     }
@@ -185,16 +195,11 @@ public class ControladorInventario implements ActionListener, KeyListener {
                 return;
             }
 
-            int fila = vista.getTabla().getSelectedRow();
-            String nombre   = (String) vista.getModeloTabla().getValueAt(fila, 1);
-            String codigo   = (String) vista.getModeloTabla().getValueAt(fila, 2);
-            String categoria = (String) vista.getModeloTabla().getValueAt(fila, 3);
-
             Item itemEditar = new Item();
             itemEditar.setId(id);
-            itemEditar.setNombre(nombre);
-            itemEditar.setCodigo(codigo);
-            itemEditar.setCategoria(categoria);
+            itemEditar.setNombre(this.nombreItemEditar != null ? this.nombreItemEditar : "");
+            itemEditar.setCodigo(this.codigoItemEditar != null ? this.codigoItemEditar : "");
+            itemEditar.setCategoria(this.categoriaItemEditar != null ? this.categoriaItemEditar : "");
             itemEditar.setCantidad(cantidad);
             itemEditar.setUbicacion(ubicacion);
             itemEditar.setEstado(estadoSel != null ? estadoSel : "Disponible");
